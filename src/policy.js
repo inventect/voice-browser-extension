@@ -11,6 +11,9 @@ import {
   SILENCE_COMPLETE_MS,
   PAYLOAD_SILENCE_MS,
   PAYLOAD_INTENTS,
+  DISMISS_PATTERNS,
+  WANTS_ACCEPT_RE,
+  WANTS_REJECT_RE,
 } from "./constants.js";
 import { toHttpUrl } from "./spans.js";
 
@@ -53,7 +56,7 @@ function fillTemplate(tpl, q) {
  * @param {boolean} p.confirmed  user already said confirm for this action
  * @returns {{decision: string, action?: object, candidates?: Array, reasons: Array, summary: string}}
  */
-export function evaluatePolicy({ answers, candidates, snapshot, silentMs = 0, isFinal = false, pending = null, context = null }) {
+export function evaluatePolicy({ answers, candidates, snapshot, silentMs = 0, isFinal = false, pending = null, context = null, transcript = "" }) {
   const reasons = [];
   const intent = answers.intent;
   const intentName = intent?.choice ?? "none";
@@ -142,7 +145,7 @@ export function evaluatePolicy({ answers, candidates, snapshot, silentMs = 0, is
   // 4. Build the concrete action (code owns URLs, templates and text; Jev only picked options).
   // On a correction that names a new target, the previous target is not an option ("the other one").
   const excludeTargetId = isCorrection && TARGET_INTENTS.has(intentName) ? lastAction.targetId ?? null : null;
-  const built = buildAction({ intentName, answers, candidates, snapshot, reasons, excludeTargetId });
+  const built = buildAction({ intentName, answers, candidates, snapshot, reasons, excludeTargetId, transcript });
   if (built.decision !== "act") return { ...built, reasons };
   const action = built.action;
 
@@ -180,11 +183,71 @@ export function reverseAction(action) {
   }
 }
 
-function buildAction({ intentName, answers, candidates, snapshot, reasons, excludeTargetId = null }) {
+/**
+ * Code-side ranking of a pop-up's controls for "close this" / "accept" / "not now":
+ * the user's words decide the family (accept / reject / close), patterns from constants.js match
+ * the button labels, pop-up order (topmost first) breaks ties. Returns an element or null.
+ */
+export function pickDismissControl(snapshot, transcript = "") {
+  const inPopup = (snapshot?.elements ?? []).filter((e) => e.popup && ["button", "link", "clickable", "menuitem"].includes(e.role));
+  if (!inPopup.length) return null;
+  const t = String(transcript || "");
+  const wantsReject = WANTS_REJECT_RE.test(t);
+  const wantsAccept = !wantsReject && WANTS_ACCEPT_RE.test(t);
+  const scored = inPopup.map((e, i) => {
+    const label = `${e.text || ""} ${e.placeholder || ""}`.trim();
+    let s = 0;
+    if (DISMISS_PATTERNS.close.test(label)) s = Math.max(s, 3);
+    if (DISMISS_PATTERNS.reject.test(label)) s = Math.max(s, wantsReject ? 5 : 2);
+    if (DISMISS_PATTERNS.accept.test(label)) s = Math.max(s, wantsAccept ? 5 : 1);
+    if (wantsReject && DISMISS_PATTERNS.close.test(label)) s = Math.max(s, 4);
+    return { e, s, i };
+  });
+  scored.sort((a, b) => b.s - a.s || a.i - b.i);
+  return scored[0].s > 0 ? scored[0].e : null;
+}
+
+function buildAction({ intentName, answers, candidates, snapshot, reasons, excludeTargetId = null, transcript = "" }) {
   const site = answers.site?.choice ?? "none";
   const elements = snapshot?.elements ?? [];
 
   switch (intentName) {
+    case "close_popup": {
+      const target = answers.target;
+      const chosen = target?.choice;
+      const chosenEl = elements.find((e) => e.id === chosen);
+      const popupKind = snapshot?.popup?.kind ?? null;
+      // 1. Jev's target pick, when confident and actually part of the pop-up.
+      if (chosenEl?.popup && target.confidence >= T.targetConfidence && (target.probabilities?.[chosen] ?? 0) >= T.targetTopProb) {
+        check(reasons, "popup", popupKind, "-", true, `target ${chosen} is in the pop-up`);
+        return { decision: "act", action: { type: "click_element", targetId: chosen, label: elementLabel(elements, chosen), via: "close_popup" } };
+      }
+      // 2. Code: rank the pop-up's own controls by the words used (accept / reject / close).
+      const pick = pickDismissControl(snapshot, transcript);
+      if (pick) {
+        check(reasons, "popup", popupKind, "-", true, `dismiss control chosen in code → ${pick.id}`);
+        return { decision: "act", action: { type: "click_element", targetId: pick.id, label: elementLabel(elements, pick.id), via: "close_popup" } };
+      }
+      if (!popupKind) {
+        // No pop-up detected: a confident target anywhere still counts ("close" on a page-level close button).
+        if (chosenEl && chosen !== "none" && target.confidence >= T.targetConfidence) {
+          check(reasons, "popup", "none detected", "-", true, `clicking ${chosen} anyway`);
+          return { decision: "act", action: { type: "click_element", targetId: chosen, label: elementLabel(elements, chosen), via: "close_popup" } };
+        }
+        check(reasons, "popup", "none detected", "modal or banner", false, "nothing to dismiss on this page");
+        return { decision: "wait", summary: "no pop-up detected on this page" };
+      }
+      // 3. Pop-up without a recognisable dismiss control: let the user pick among its buttons.
+      const viable = elements.filter((e) => e.popup && ["button", "link"].includes(e.role)).slice(0, T.candidateCount);
+      if (!viable.length) return { decision: "wait", summary: "pop-up has no buttons I can press" };
+      return {
+        decision: "disambiguate",
+        candidates: viable.map((c) => ({ id: c.id, p: 0, label: elementLabel(elements, c.id) })),
+        pendingIntent: { type: "click_element", text: null },
+        summary: `which one? ${viable.map((c, i) => `${i + 1}: ${elementLabel(elements, c.id)}`).join(" | ")}`,
+      };
+    }
+
     case "navigate_url": {
       const urlPick = pickSpan(answers.url_span, T.spanConfidence, candidates.url?.[0]);
       if (urlPick) {

@@ -9,7 +9,19 @@
  *  - restore()/persistable() so stats + context survive service-worker suspension (chrome.storage.session)
  */
 import { Emitter } from "./emitter.js";
-import { DEBOUNCE_MS, SILENCE_COMPLETE_MS, CANDIDATE_TTL_MS, MAX_INFLIGHT, MAX_CONTEXT_ACTIONS, MODEL, T } from "./constants.js";
+import {
+  DEBOUNCE_MS,
+  SILENCE_COMPLETE_MS,
+  CANDIDATE_TTL_MS,
+  MAX_INFLIGHT,
+  MAX_CONTEXT_ACTIONS,
+  MODEL,
+  T,
+  DUPLICATE_TRANSCRIPT_MS,
+  REPEAT_ACTION_MS,
+  REPEAT_WORDS_RE,
+  CLOSED_SET_ACTIONS,
+} from "./constants.js";
 import { decide, isAbortError } from "./jev.js";
 import { evaluatePolicy, describe } from "./policy.js";
 import { parseCandidatePick, cleanTranscript } from "./spans.js";
@@ -17,6 +29,22 @@ import { approxTokens } from "./snapshot.js";
 
 const avg = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null);
 const emptyContext = () => ({ previousPage: null, recentActions: [] });
+const norm = (s) => String(s || "").toLowerCase().replace(/[.,!?]+$/g, "").replace(/\s+/g, " ").trim();
+/** Same closed-set action? (type + amount/direction) */
+export const sameAction = (a, b) => Boolean(a && b) && a.type === b.type && (a.amount ?? null) === (b.amount ?? null) && (a.direction ?? null) === (b.direction ?? null);
+
+const CONJUNCTION_RE = /^(.+?)\s+(?:and then|and|then)\s+(\S+(?:\s+\S+)+)$/i;
+/**
+ * Two commands in one breath: when the decision for "go to example dot com and click the more"
+ * arrives (earlier partials were cancelled or still incomplete), only the words up to the
+ * conjunction belong to the action just taken; the rest is the next command. Never applied to
+ * actions that carry free text (a search query / typed text), where "and" may be part of the payload.
+ */
+export function conjunctionCut(text, action) {
+  if (!action || action.text != null || action.query != null) return text;
+  const m = CONJUNCTION_RE.exec(text);
+  return m ? m[1] : text;
+}
 
 export class Controller extends Emitter {
   /**
@@ -35,6 +63,7 @@ export class Controller extends Emitter {
     this.utterance = null; // { id, physicalId, prefix, gen, text, final, startedAt, updatedAt, actedOn, actedText }
     this.consumed = null; // { id: physical utterance id, prefix: executed text (lowercase), gen }
     this.pending = null; // destructive action awaiting "confirm"
+    this.lastActed = null; // { text (normalised), physicalId, at } — for the recognizer re-delivery guard
     this.candidates = null; // { list: [{n,id,label}], intent: {type,text}, at }
     this.lastDecision = null;
     this.debounceTimer = null;
@@ -103,6 +132,32 @@ export class Controller extends Emitter {
     // ("please") are ignored.
     const consumed = this.consumed;
     let virtualId = utteranceId;
+
+    // Recognizer re-delivery guard: the phrase just acted on arrives again under a NEW utterance
+    // id — Chrome's Web Speech API does this when the final result lands under a shifted result
+    // index, or replays the last phrase after its automatic restart. Same words within
+    // DUPLICATE_TRANSCRIPT_MS = the same utterance: consume it, never act twice ("go back" ×2).
+    const last = this.lastActed;
+    if (last && utteranceId !== last.physicalId && (!consumed || consumed.id !== utteranceId) && now - last.at < DUPLICATE_TRANSCRIPT_MS) {
+      const lc = norm(clean);
+      if (lc === last.text) {
+        this._log("debug", `duplicate transcript "${clean}" ignored — same phrase acted on ${now - last.at}ms ago`);
+        this.emit("transcript", { text: clean, final, utteranceId, actedOn: true, duplicate: true });
+        return;
+      }
+      if (lc.startsWith(last.text + " ")) {
+        const rest = clean.slice(last.text.length).trim();
+        if (rest.split(/\s+/).filter(Boolean).length < 2) {
+          this._log("debug", `duplicate transcript "${clean}" ignored (extends the phrase just acted on by one word)`);
+          this.emit("transcript", { text: clean, final, utteranceId, actedOn: true, duplicate: true });
+          return;
+        }
+        // Two or more new words after the acted phrase: that is a fresh command, like chaining.
+        clean = rest;
+        virtualId = `${utteranceId}+dup`;
+      }
+    }
+
     if (consumed && consumed.id === utteranceId) {
       if (!clean.toLowerCase().startsWith(consumed.prefix)) return; // recognizer revised the executed words; ignore
       clean = clean.slice(consumed.prefix.length).trim();
@@ -161,6 +216,7 @@ export class Controller extends Emitter {
       prefix: `${utt.prefix} ${text}`.trim().toLowerCase(),
       gen: (utt.gen || 0) + 1,
     };
+    this.lastActed = { text: norm(text), physicalId: utt.physicalId, at: Date.now() };
   }
 
   /** Ask Jev about the current utterance. Cancels any in-flight request. */
@@ -225,7 +281,7 @@ export class Controller extends Emitter {
     // but it must never be treated as final/silent — free-text payloads would be truncated.
     const stale = utt.text !== textAtRequest;
     const silentMs = stale ? 0 : Date.now() - utt.updatedAt;
-    const policy = evaluatePolicy({
+    let policy = evaluatePolicy({
       answers: result.answers,
       candidates: result.candidates,
       snapshot: this.snapshot,
@@ -233,7 +289,25 @@ export class Controller extends Emitter {
       isFinal: utt.final && !stale,
       pending: this.pending,
       context,
+      transcript: textAtRequest,
     });
+
+    // Repeat guard: the identical closed-set action was executed a moment ago (the recognizer
+    // heard "go back" twice, or two overlapping requests both resolved to it). Ignore unless the
+    // user asked for it explicitly ("again", "once more").
+    if (policy.decision === "act") {
+      const prev = this.history[this.history.length - 1];
+      const sinceMs = prev ? Date.now() - prev.at : Infinity;
+      if (prev && CLOSED_SET_ACTIONS.has(policy.action.type) && sameAction(prev.action, policy.action) && sinceMs < REPEAT_ACTION_MS && !REPEAT_WORDS_RE.test(textAtRequest)) {
+        policy = {
+          ...policy,
+          decision: "ignore",
+          repeated: true,
+          summary: `"${describe(policy.action)}" was just executed ${sinceMs}ms ago — say "again" to repeat`,
+          reasons: [...policy.reasons, { name: "repeat", value: `${sinceMs}ms`, threshold: `≥ ${REPEAT_ACTION_MS}ms or "again"`, pass: false, note: "identical action just executed" }],
+        };
+      }
+    }
 
     const decision = {
       transcript: textAtRequest,
@@ -265,12 +339,21 @@ export class Controller extends Emitter {
     const exhausted = (utt.final && !stale) || silentMs >= SILENCE_COMPLETE_MS;
 
     switch (policy.decision) {
-      case "act":
-        this._consume(utt, textAtRequest);
+      case "act": {
+        const consumedText = conjunctionCut(textAtRequest, policy.action);
+        if (consumedText !== textAtRequest) this._log("debug", `acting on "${consumedText}"; the rest of the breath is a new command`);
+        this._consume(utt, consumedText);
         if (policy.action.confirmed) this.pending = null;
         this.candidates = null;
         await this._runAction(policy.action, { decision, utterance: utt });
+        // The words after the conjunction are already here: evaluate them now instead of waiting
+        // for the recognizer's next update.
+        if (consumedText !== textAtRequest && this.utterance === utt) {
+          const full = utt.text;
+          setTimeout(() => this.handleTranscript({ text: `${utt.prefix} ${full}`.trim(), final: utt.final, utteranceId: utt.physicalId }), 0);
+        }
         break;
+      }
       case "confirm":
         this._consume(utt, textAtRequest);
         this.pending = policy.action;
@@ -294,6 +377,9 @@ export class Controller extends Emitter {
       }
       case "wait":
         if (!exhausted || policy.retryInMs) this._scheduleSilenceRetry(utt, policy.retryInMs);
+        break;
+      case "ignore":
+        if (policy.repeated) this._consume(utt, textAtRequest); // done with this utterance
         break;
       default:
         break;
@@ -426,6 +512,7 @@ export class Controller extends Emitter {
         title: this.snapshot.title,
         site: this.snapshot.site,
         searchBoxId: this.snapshot.searchBoxId,
+        popup: this.snapshot.popup || null,
         elements: this.snapshot.elements,
         tabs: this.snapshot.tabs,
         restricted: Boolean(this.snapshot.restricted),

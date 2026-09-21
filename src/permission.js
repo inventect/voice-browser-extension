@@ -4,13 +4,11 @@
  */
 (() => {
   const $ = (id) => document.getElementById(id);
-  $("origin").textContent = `chrome-extension://${chrome.runtime.id}`;
-  const params = new URLSearchParams(location.search);
-  const reason = params.get("reason");
+  const reason = new URLSearchParams(location.search).get("reason");
 
   function show(kind, text) {
     const el = $("status");
-    el.className = `notice ${kind}`;
+    el.className = `status-line ${kind}`;
     el.textContent = text;
   }
 
@@ -18,19 +16,20 @@
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach((t) => t.stop());
-      const st = await navigator.permissions.query({ name: "microphone" }).catch(() => null);
-      show("ok", `✓ microphone allowed${st ? ` (state: ${st.state})` : ""}. You can go back to the side panel — this tab closes in 2 s.`);
+      show("ok", "✓ Microphone allowed. Back to the side panel — this tab closes in 2 s.");
+      $("retry").textContent = "Allowed";
+      $("retry").disabled = true;
       window.__vbMicGranted = true;
       setTimeout(closeTab, 2000);
       return true;
     } catch (err) {
       const name = err?.name || "Error";
       if (name === "NotAllowedError") {
-        show("err", "✗ microphone blocked. Click the icon left of the address bar (or the button below) and set Microphone to Allow, then press “Request microphone access” again.");
+        show("err", "Chrome blocked the microphone. Open the site settings below, set Microphone to Allow, then press “Allow microphone” again.");
       } else if (name === "NotFoundError") {
-        show("err", "✗ no microphone found on this computer.");
+        show("err", "No microphone was found on this computer.");
       } else {
-        show("err", `✗ ${name}: ${err?.message || err}`);
+        show("err", `${name}: ${err?.message || err}`);
       }
       window.__vbMicError = name;
       return false;
@@ -52,7 +51,7 @@
   $("settings").onclick = () => chrome.tabs.create({ url: `chrome://settings/content/siteDetails?site=${encodeURIComponent(`chrome-extension://${chrome.runtime.id}`)}` });
 
   if (reason === "denied") {
-    show("err", "Microphone access was blocked for this extension earlier. Open the site settings (button below), set Microphone to Allow, then press “Request microphone access”.");
+    show("err", "Microphone access was blocked earlier. Open the site settings, set Microphone to Allow, then press “Allow microphone”.");
   } else {
     request();
   }

@@ -43,10 +43,15 @@ const jobs = [
 
 function copyStatic() {
   fs.copyFileSync(path.join(root, "manifest.json"), path.join(dist, "manifest.json"));
-  for (const f of ["sidepanel.html", "options.html", "permission.html", "ui.css"]) {
+  for (const f of ["sidepanel.html", "options.html", "permission.html", "ui.css", "sidepanel.css", "pages.css"]) {
     fs.copyFileSync(path.join(src, f), path.join(dist, f));
   }
-  for (const size of [16, 32, 48, 128]) fs.writeFileSync(path.join(dist, "icons", `icon${size}.png`), makeIcon(size));
+  // Icons: rasterised from assets/icon.svg by `npm run icons` (Playwright) into assets/icons/;
+  // fall back to a procedural drawing of the same mark if those PNGs are missing.
+  for (const size of [16, 32, 48, 128]) {
+    const pre = path.join(root, "assets", "icons", `icon${size}.png`);
+    fs.writeFileSync(path.join(dist, "icons", `icon${size}.png`), fs.existsSync(pre) ? fs.readFileSync(pre) : makeIcon(size));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -74,40 +79,39 @@ function chunk(type, data) {
   crc.writeUInt32BE(crc32(td));
   return Buffer.concat([len, td, crc]);
 }
+/** Fallback approximation of assets/icon.svg: amber disc with an ink microphone. */
 function makeIcon(size) {
   const px = Buffer.alloc(size * size * 4);
-  const r = size / 2;
-  const radius = size * 0.22; // rounded corners
-  const dotR = size * 0.26;
-  const micTop = size * 0.28;
+  const c = size / 2;
+  const R = size / 2 - 1;
+  const s = size / 128; // svg units → px
+  const inRoundRect = (x, y, rx, ry, w, h, rad) => {
+    const dx = Math.max(Math.abs(x - (rx + w / 2)) - (w / 2 - rad), 0);
+    const dy = Math.max(Math.abs(y - (ry + h / 2)) - (h / 2 - rad), 0);
+    return Math.hypot(dx, dy) <= rad;
+  };
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const i = (y * size + x) * 4;
-      // rounded square background
-      const dx = Math.max(Math.abs(x + 0.5 - r) - (r - radius), 0);
-      const dy = Math.max(Math.abs(y + 0.5 - r) - (r - radius), 0);
-      const inside = Math.hypot(dx, dy) <= radius;
-      if (!inside) continue;
-      let [R, G, B] = [17, 24, 39]; // #111827
-      // amber dot (the "●" from the control page)
-      const d = Math.hypot(x + 0.5 - r, y + 0.5 - r * 0.95);
-      if (d <= dotR) [R, G, B] = [245, 158, 11];
-      else if (d <= dotR + 1) {
-        const a = dotR + 1 - d;
-        R = Math.round(R * (1 - a) + 245 * a);
-        G = Math.round(G * (1 - a) + 158 * a);
-        B = Math.round(B * (1 - a) + 11 * a);
-      }
-      // small "stand" under the dot so it reads as a mic at 16px
-      if (y > r * 0.95 + dotR && y < size * 0.82 && Math.abs(x + 0.5 - r) < size * 0.06) [R, G, B] = [245, 158, 11];
-      if (y >= size * 0.78 && y < size * 0.84 && Math.abs(x + 0.5 - r) < size * 0.2) [R, G, B] = [245, 158, 11];
-      px[i] = R;
-      px[i + 1] = G;
-      px[i + 2] = B;
-      px[i + 3] = 255;
+      const X = x + 0.5;
+      const Y = y + 0.5;
+      const d = Math.hypot(X - c, Y - c);
+      if (d > R) continue;
+      const aa = Math.min(1, R - d);
+      let [r, g, b] = [230, 135, 30];
+      // mic body (rect 52,30 24x44 rx12), cradle arc (center 64,66 r24, y>66), stem + base
+      const inBody = inRoundRect(X, Y, 52 * s, 30 * s, 24 * s, 44 * s, 12 * s);
+      const arcD = Math.hypot(X - 64 * s, Y - 66 * s);
+      const inArc = Y >= 66 * s && Math.abs(arcD - 24 * s) <= 4 * s;
+      const inStem = Math.abs(X - 64 * s) <= 4 * s && Y >= 88 * s && Y <= 101 * s;
+      const inBase = Math.abs(Y - 101 * s) <= 4 * s && X >= 50 * s && X <= 78 * s;
+      if (inBody || inArc || inStem || inBase) [r, g, b] = [28, 24, 20];
+      px[i] = r;
+      px[i + 1] = g;
+      px[i + 2] = b;
+      px[i + 3] = Math.round(255 * aa);
     }
   }
-  void micTop;
   const rows = [];
   for (let y = 0; y < size; y++) rows.push(Buffer.concat([Buffer.from([0]), px.subarray(y * size * 4, (y + 1) * size * 4)]));
   const ihdr = Buffer.alloc(13);

@@ -1,0 +1,41 @@
+/* Options + permission pages (full-tab layouts). Tokens in ui.css. */
+body {
+  background:
+    radial-gradient(900px 420px at 20% -120px, var(--bg-glow), transparent 70%),
+    var(--bg);
+  min-height: 100vh;
+}
+.page { max-width: 640px; margin: 0 auto; padding: 28px 20px 64px; }
+.page > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+.page > header .pill { font-size: 12px; }
+.page h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; letter-spacing: -0.015em; margin: 0 0 6px; }
+.lede { color: var(--ink-2); margin: 0 0 26px; font-size: 14.5px; max-width: 52ch; }
+.stack { gap: 14px; }
+.card { padding: 20px; }
+.card h2 { font-size: 17px; margin-bottom: 8px; }
+.card .desc { color: var(--ink-2); margin: 0 0 14px; font-size: 13px; }
+.result { font-size: 12.5px; margin-left: 4px; }
+.result.ok { color: var(--ok); } .result.err { color: var(--danger); }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px; }
+.step { background: var(--surface-2); border-radius: var(--radius-sm); padding: 12px; }
+.step .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 12px; margin-bottom: 8px; }
+.step b { display: block; margin-bottom: 3px; }
+.step p { font-size: 12px; color: var(--ink-2); margin: 0; }
+@media (max-width: 520px) { .steps { grid-template-columns: 1fr; } }
+.kv { display: grid; grid-template-columns: 150px 1fr; gap: 6px 14px; margin: 0; font-size: 13px; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; word-break: break-word; }
+details.section { border-top: 1px solid var(--line); margin-top: 8px; }
+details.section > summary { padding: 14px 2px; font-size: 13px; }
+details.section .card { margin-bottom: 12px; }
+.center { text-align: center; }
+.permission { max-width: 460px; margin: 10vh auto 0; }
+.permission .card { padding: 32px 28px; }
+.permission .mark { width: 56px; height: 56px; margin: 0 auto 14px; display: block; }
+.permission h1 { font-size: 24px; }
+.permission .lede { margin-bottom: 18px; font-size: 14px; }
+.permission .btn.primary { padding: 12px 22px; font-size: 14px; }
+.status-line { margin: 16px 0 8px; min-height: 22px; font-size: 13px; }
+.status-line.ok { color: var(--ok); } .status-line.err { color: var(--danger); }
+.links { margin-top: 18px; display: flex; gap: 14px; justify-content: center; font-size: 12.5px; }
+.links button { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; font-size: 12.5px; }
+.links button:hover { text-decoration: underline; }

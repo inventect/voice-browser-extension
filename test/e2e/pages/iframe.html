@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>iframe content</title>
+<style>body{font-family:system-ui,sans-serif;margin:12px}</style></head>
+<body>
+<p>Content inside a same-origin iframe.</p>
+<button id="frame-btn" onclick="window.parent.__clicks=(window.parent.__clicks||[]).concat('frame-button');document.getElementById('frame-out').textContent='frame button clicked'">Frame action button</button>
+<a href="page-b.html" target="_top" id="frame-link">Frame link to page B</a>
+<span id="frame-out"></span>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Modal test page — voice-browser-extension</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; }
+  ul { columns: 3; }
+  li { margin: 6px 0; }
+  /* cookie banner: fixed, bottom, high z-index */
+  #cookie { position: fixed; left: 0; right: 0; bottom: 0; background: #1f2937; color: #fff; padding: 18px 24px; z-index: 99998; display: flex; gap: 12px; align-items: center; }
+  #cookie button { padding: 8px 14px; border-radius: 6px; border: 0; cursor: pointer; }
+  /* modal: backdrop + centered dialog */
+  #backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 99999; display: none; }
+  #backdrop.open { display: block; }
+  #modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 420px; background: #fff; border-radius: 12px; padding: 28px; z-index: 100000; display: none; box-shadow: 0 30px 80px rgba(0,0,0,.4); }
+  #modal.open { display: block; }
+  #modal h2 { margin: 0 0 8px; }
+  #modal .x { position: absolute; top: 10px; right: 12px; background: none; border: 0; font-size: 22px; cursor: pointer; }
+  #modal .actions { display: flex; gap: 10px; margin-top: 18px; }
+  #modal .actions button { padding: 10px 16px; border-radius: 8px; border: 1px solid #ccc; cursor: pointer; }
+  #status { position: fixed; top: 8px; right: 8px; font: 12px monospace; background: #eee; padding: 4px 8px; z-index: 100001; }
+  iframe { width: 100%; height: 120px; border: 1px solid #999; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div id="status">clicks: <span id="clicks">none</span></div>
+<h1>A page with a pop-up</h1>
+<p>Below: 150 links (to exceed the 100-element snapshot cap), a cookie banner, a newsletter modal, a shadow-DOM control and a same-origin iframe.</p>
+<ul id="links"></ul>
+
+<iframe id="frame" src="iframe.html" title="Same-origin iframe"></iframe>
+
+<!-- cookie banner -->
+<div id="cookie" role="region" aria-label="Cookie consent">
+  <span>We use cookies to improve your experience. By continuing you agree to our policy.</span>
+  <button id="accept-cookies">Accept all cookies</button>
+  <button id="reject-cookies">Reject non-essential</button>
+</div>
+
+<!-- newsletter modal (role=dialog, aria-modal) -->
+<div id="backdrop" class="open"></div>
+<div id="modal" class="open" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <button class="x" id="close-modal" aria-label="Close">×</button>
+  <h2 id="modal-title">Join our newsletter</h2>
+  <p>Get the best stories in your inbox every week. No spam, unsubscribe any time.</p>
+  <input type="email" id="email" placeholder="you@example.com" />
+  <div class="actions">
+    <button id="subscribe">Subscribe</button>
+    <button id="not-now">Not now</button>
+  </div>
+  <div id="shadow-host"></div>
+</div>
+
+<script>
+  const ul = document.getElementById("links");
+  for (let i = 1; i <= 150; i++) {
+    const li = document.createElement("li");
+    li.innerHTML = `<a href="#story-${i}">Background story number ${i} about something interesting</a>`;
+    ul.appendChild(li);
+  }
+  const log = (what) => {
+    const el = document.getElementById("clicks");
+    el.textContent = el.textContent === "none" ? what : el.textContent + "," + what;
+    window.__clicks = (window.__clicks || []).concat(what);
+  };
+  const closeModal = () => { document.getElementById("modal").classList.remove("open"); document.getElementById("backdrop").classList.remove("open"); };
+  document.getElementById("close-modal").onclick = () => { log("close"); closeModal(); };
+  document.getElementById("not-now").onclick = () => { log("not-now"); closeModal(); };
+  document.getElementById("subscribe").onclick = () => { log("subscribe"); closeModal(); };
+  document.getElementById("accept-cookies").onclick = () => { log("accept-cookies"); document.getElementById("cookie").remove(); };
+  document.getElementById("reject-cookies").onclick = () => { log("reject-cookies"); document.getElementById("cookie").remove(); };
+  // a control inside an open shadow root
+  const host = document.getElementById("shadow-host");
+  const root = host.attachShadow({ mode: "open" });
+  root.innerHTML = `<style>button{margin-top:10px;padding:6px 10px}</style><button id="shadow-btn">Remind me later</button>`;
+  root.getElementById("shadow-btn").onclick = () => { log("shadow-remind"); closeModal(); };
+  // history helper for the "go back" test: count popstate/navigations
+  window.__historyGoCalls = 0;
+  const origGo = history.go.bind(history);
+  history.go = (n) => { window.__historyGoCalls++; return origGo(n); };
+</script>
+</body>
+</html>

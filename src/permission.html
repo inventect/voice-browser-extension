@@ -2,25 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Voice Browser · microphone permission</title>
+<title>Voice Browser · Allow the microphone</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="ui.css" />
+<link rel="stylesheet" href="pages.css" />
 </head>
 <body>
-<header><h1><span class="dot-title">●</span> voice browser — microphone permission</h1></header>
-<main class="wide">
-  <div class="card">
-    <h2>one-time microphone access</h2>
-    <p class="small" style="margin:0 0 10px">Chrome cannot show the microphone prompt inside a side panel, so it is requested here once. The permission belongs to the extension (<code id="origin">chrome-extension://…</code>), so afterwards the side panel can listen. Choose <b>Allow</b> (not "Allow this time") in the prompt.</p>
-    <div id="status" class="notice">Requesting microphone access…</div>
-    <div class="row" style="margin-top:10px">
-      <button id="retry" class="primary">Request microphone access</button>
-      <button id="settings">Open Chrome site settings for this extension</button>
+<div class="page permission center">
+  <section class="card rise">
+    <svg class="mark" viewBox="0 0 128 128" aria-hidden="true"><circle cx="64" cy="64" r="60" fill="var(--accent)"/><rect x="52" y="30" width="24" height="44" rx="12" fill="var(--accent-ink)"/><path d="M40 66c0 13.3 10.7 24 24 24s24-10.7 24-24" fill="none" stroke="var(--accent-ink)" stroke-width="8" stroke-linecap="round"/><path d="M64 90v11M50 101h28" fill="none" stroke="var(--accent-ink)" stroke-width="8" stroke-linecap="round"/></svg>
+    <h1>Allow the microphone</h1>
+    <p class="lede">Voice Browser needs to hear you. Chrome can’t ask from inside the side panel, so it asks here, once. Choose <b>Allow</b> in the prompt — not “Allow this time”.</p>
+    <button id="retry" class="btn primary">Allow microphone</button>
+    <p id="status" class="status-line">Waiting for Chrome’s prompt…</p>
+    <div class="links">
+      <button id="settings">Open Chrome site settings</button>
       <button id="close">Close this tab</button>
     </div>
-    <p class="small" style="margin-top:10px">If the prompt does not appear: click the icon left of the address bar → Site settings → Microphone → Allow, or use the button above. Then go back to the side panel and press <b>Start mic</b> (it starts automatically when it sees the grant).</p>
-  </div>
-</main>
+    <p class="small muted" style="margin:18px 0 0">Audio is processed by Chrome’s speech service. Nothing is recorded by the extension.</p>
+  </section>
+</div>
 <script src="permission.js"></script>
 </body>
 </html>

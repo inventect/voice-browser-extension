@@ -14,7 +14,9 @@
     "test:integration": "node --test 'test/integration/**/*.test.js'",
     "test:e2e": "npm run build && node test/e2e/extension.e2e.mjs",
     "test:e2e:headed": "npm run build && node test/e2e/extension.e2e.mjs --headed",
-    "test:all": "npm test && npm run test:integration && npm run test:e2e"
+    "test:all": "npm test && npm run test:integration && npm run test:e2e",
+    "icons": "node scripts/icons.mjs",
+    "ui:shots": "npm run build && node scripts/ui-screenshots.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.24.0",

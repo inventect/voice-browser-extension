@@ -44,8 +44,8 @@ export async function execute(action, browser) {
     }
 
     case "click_element": {
-      const nav = browser.waitForNavigation(tab.id, { startMs: 1200, completeMs: 8000 });
-      const newTab = browser.waitForNewTab(tab.id, 1400);
+      const nav = browser.waitForNavigation(tab.id, { startMs: 900, completeMs: 8000 });
+      const newTab = browser.waitForNewTab(tab.id, 1000);
       const res = await browser.exec(tab.id, { type: "click", id: action.targetId, label });
       if (!res?.ok) {
         return { ok: false, detail: res?.detail || "click failed" };

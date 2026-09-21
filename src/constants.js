@@ -62,6 +62,30 @@ export const T = {
 export const TARGET_INTENTS = new Set(["click_element", "type_into_field", "select_option"]);
 
 // ---------------------------------------------------------------------------
+// Repeat / duplicate protection (why "go back" must never go back twice)
+// ---------------------------------------------------------------------------
+// The speech recognizer can deliver the phrase that was just acted on a second time — as the
+// final result under a new result index, or again after its automatic restart. A transcript that
+// equals (or merely extends by one word) the text just acted on, arriving within this window under
+// a different utterance id, is treated as the same utterance.
+export const DUPLICATE_TRANSCRIPT_MS = 2500;
+// An identical closed-set action (back, forward, reload, scroll, tab ops) decided again within this
+// window of the previous execution is ignored unless the user says "again" / "once more".
+export const REPEAT_ACTION_MS = 1500;
+export const REPEAT_WORDS_RE = /\b(again|once more|one more|another)\b/i;
+export const CLOSED_SET_ACTIONS = new Set(["go_back", "go_forward", "reload", "scroll_down", "scroll_up", "open_new_tab", "close_tab", "switch_tab"]);
+
+// Pop-up dismissal: when the user says "close this" / "accept" / "not now" and a pop-up is open,
+// code ranks the pop-up's controls with these patterns (Jev's `target` pick wins when confident).
+export const DISMISS_PATTERNS = {
+  close: /\b(close|dismiss|skip|hide)\b|^\s*[×✕✖xX]\s*$/i,
+  accept: /\b(accept|agree|allow|got it|ok(ay)?|i understand|understood|continue|yes|sure|fine)\b/i,
+  reject: /\b(reject|decline|deny|refuse|no thanks|not now|maybe later|later|no,? thank|only (necessary|essential)|necessary only)\b/i,
+};
+export const WANTS_ACCEPT_RE = /\b(accept|agree|allow|yes|ok(ay)?|got it|sure)\b/i;
+export const WANTS_REJECT_RE = /\b(reject|decline|deny|refuse|no thanks|not now|later|no)\b/i;
+
+// ---------------------------------------------------------------------------
 // Sites (code owns URLs; Jev only picks the name)
 // ---------------------------------------------------------------------------
 export const SITE_HOME = {
@@ -109,9 +133,14 @@ export const INTENT_CRITERIA = {
     examples: ["search for alan turing", "look up typesafe jev", "google cheap flights", "search wikipedia for cats"],
   },
   click_element: {
-    what: "Click / press / open / select / choose a link, button, tab, result or item that is on the current page",
-    not_for: "Opening a website by name; typing text",
-    examples: ["click the first result", "click sign in", "open the second link", "press the more information link"],
+    what: "Click / press / open / select / choose a link, button, tab, result or item that is on the current page (including a button inside a pop-up)",
+    not_for: "Opening a website by name; typing text; a bare 'close this' / 'dismiss' / 'accept' aimed at a pop-up (that is close_popup)",
+    examples: ["click the first result", "click sign in", "open the second link", "press the more information link", "click accept all cookies", "press the close button on the popup"],
+  },
+  close_popup: {
+    what: "Get rid of the pop-up / dialog / cookie banner / overlay currently covering the page: close, dismiss, accept, agree, reject or decline it (see `page.modal_open` and `page.modal_text`)",
+    not_for: "Closing the browser tab; going back; clicking a named link elsewhere on the page",
+    examples: ["close this", "dismiss the popup", "accept cookies", "accept all", "no thanks", "not now", "close the dialog", "reject cookies", "get rid of that"],
   },
   type_into_field: {
     what: "Type or enter specific text into an input box, search box or text field on the page",
@@ -159,9 +188,9 @@ export const INTENT_CRITERIA = {
     examples: ["open a new tab", "new tab"],
   },
   close_tab: {
-    what: "Close the current tab",
-    not_for: "Going back",
-    examples: ["close this tab", "close tab"],
+    what: "Close the current browser tab",
+    not_for: "Going back; closing a pop-up, dialog or banner on the page (that is close_popup)",
+    examples: ["close this tab", "close tab", "close the tab"],
   },
   switch_tab: {
     what: "Switch to another / the next / the previous tab",
@@ -206,7 +235,7 @@ export const QUESTIONS = {
     instructions: {
       question: "Which browser action does the user ask for in `transcript`?",
       focus:
-        "Judge the words said so far. If the sentence is unfinished, pick the action the words already commit to; if no action is recognizable pick none. `page` and `elements` describe what is currently on screen. `context.previous_page` and `context.recent_actions` (most recent first) say where the user just came from and what was just done: 'back to the results' after clicking a search result is go_back; 'the other one' or 'not that one' after a click is click_element on a different element.",
+        "Judge the words said so far. If the sentence is unfinished, pick the action the words already commit to; if no action is recognizable pick none. `page` and `elements` describe what is currently on screen. When `page.modal_open` is true a pop-up (`page.modal_text`) covers the page: 'close this', 'dismiss', 'accept cookies', 'not now' are close_popup, while 'close this tab' is still close_tab. `context.previous_page` and `context.recent_actions` (most recent first) say where the user just came from and what was just done: 'back to the results' after clicking a search result is go_back; 'the other one' or 'not that one' after a click is click_element on a different element.",
     },
     criteria: INTENT_CRITERIA,
   },
@@ -216,7 +245,7 @@ export const QUESTIONS = {
       question:
         "Which element in `elements` is the one the user refers to in `transcript` (the thing to click, type into or select)? Each line of `elements` starts with the element id (e.g. e07), then its role and visible text; the options are those ids.",
       focus:
-        "Match by the element's visible text, role and position words like first/second/top (lines are in visual order, top of page first). Use `context.recent_actions` for relative references: 'the other one' / 'the next one' / 'not that one' mean an element other than the target of the most recent action; 'open its documentation' means the docs of the page or item just opened. Pick none if the command does not refer to any element on this page, or if the referenced element is not in the list.",
+        "Match by the element's visible text, role and position words like first/second/top (lines are in visual order, top of page first). Lines tagged [popup] belong to the pop-up / dialog / banner currently covering the page (`page.modal_text`); when `page.modal_open` is true, 'close', 'accept', 'not now', 'the x' refer to its buttons. Use `context.recent_actions` for relative references: 'the other one' / 'the next one' / 'not that one' mean an element other than the target of the most recent action; 'open its documentation' means the docs of the page or item just opened. Pick none if the command does not refer to any element on this page, or if the referenced element is not in the list.",
     },
     // criteria are built per request from the element list + none
   },

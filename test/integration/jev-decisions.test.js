@@ -144,6 +144,19 @@ CASES.push(
   { name: "ctx: second result after back", transcript: "click the second result", snapshot: SEARCH_RESULTS, context: ON_RESULTS_AFTER_CLICK, intent: "click_element", targetIn: ["e21", "e22"], decision: "act" },
 );
 
+// --- Pop-ups: a newsletter dialog (role=dialog, aria-modal) and, once closed, a cookie banner. ---
+// Fixtures captured from test/e2e/pages/modal.html with scripts/capture-fixture.mjs.
+CASES.push(
+  { name: "popup: close this", transcript: "close this", snapshot: "modal-page", intentIn: ["close_popup", "click_element"], actionType: "click_element", target: "e01", decision: "act" },
+  { name: "popup: not now", transcript: "not now", snapshot: "modal-page", intentIn: ["close_popup", "click_element"], actionType: "click_element", targetIn: ["e04", "e05"], decision: "act" },
+  { name: "popup: dismiss", transcript: "dismiss the popup", snapshot: "modal-page", intentIn: ["close_popup", "click_element"], actionType: "click_element", targetIn: ["e01", "e04", "e05"], decision: "act" },
+  { name: "popup: accept cookies", transcript: "accept cookies", snapshot: "banner-page", intentIn: ["close_popup", "click_element"], actionType: "click_element", target: "e01", decision: "act" },
+  { name: "popup: reject", transcript: "reject the cookies", snapshot: "banner-page", intentIn: ["close_popup", "click_element"], actionType: "click_element", target: "e02", decision: "act" },
+  { name: "popup: close this tab still closes the tab", transcript: "close this tab", snapshot: "modal-page", intent: "close_tab", decision: "act" },
+  { name: "popup: background link still clickable", transcript: "click background story number 3", snapshot: "modal-page", intent: "click_element", decision: "act" },
+  { name: "no popup: close this waits", transcript: "close this", snapshot: "example", decisionIn: ["wait", "ignore", "disambiguate"] },
+);
+
 const results = [];
 
 before(() => {
@@ -154,11 +167,12 @@ for (const c of CASES) {
   test(`jev: ${c.name} — "${c.transcript}"`, { skip: !hasApiKey() }, async () => {
     const snapshot = typeof c.snapshot === "string" ? fixture(c.snapshot) : c.snapshot;
     const r = await decide({ transcript: c.transcript, snapshot, context: c.context ?? null });
-    const policy = evaluatePolicy({ answers: r.answers, candidates: r.candidates, snapshot, isFinal: c.final !== false, context: c.context ?? null });
+    const policy = evaluatePolicy({ answers: r.answers, candidates: r.candidates, snapshot, isFinal: c.final !== false, context: c.context ?? null, transcript: c.transcript });
     const a = r.answers;
     const failures = [];
     if (c.intent && a.intent.choice !== c.intent) failures.push(`intent ${a.intent.choice} != ${c.intent} (conf ${a.intent.confidence.toFixed(2)})`);
-    if (c.target && a.target.choice !== c.target) failures.push(`target ${a.target.choice} != ${c.target} (conf ${a.target.confidence.toFixed(2)})`);
+    if (c.intentIn && !c.intentIn.includes(a.intent.choice)) failures.push(`intent ${a.intent.choice} not in ${c.intentIn} (conf ${a.intent.confidence.toFixed(2)})`);
+    if (c.target && (policy.action?.targetId ?? a.target.choice) !== c.target) failures.push(`target ${policy.action?.targetId ?? a.target.choice} != ${c.target} (conf ${a.target.confidence.toFixed(2)})`);
     if (c.targetIn && !c.targetIn.includes(policy.action?.targetId ?? a.target.choice)) failures.push(`target ${policy.action?.targetId ?? a.target.choice} not in ${c.targetIn}`);
     if (c.targetNot && policy.action?.targetId === c.targetNot) failures.push(`target ${policy.action.targetId} should not be ${c.targetNot}`);
     if (c.correction === true && (a.is_correction?.noul ?? 0) < 0.6) failures.push(`is_correction ${(a.is_correction?.noul ?? 0).toFixed(2)} < 0.6`);

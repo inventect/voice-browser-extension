@@ -1,0 +1,652 @@
+{
+  "url": "https://example-test.local/modal.html",
+  "title": "Modal test page — voice-browser-extension",
+  "site": "generic",
+  "scrollY": 0,
+  "scrollHeight": 2422,
+  "viewportHeight": 900,
+  "searchBoxId": null,
+  "popup": {
+    "kind": "modal",
+    "text": "Join our newsletter Get the best stories in your inbox every week. No spam, unsubscribe any time. Subscribe Not now",
+    "count": 1
+  },
+  "elements": [
+    {
+      "id": "e01",
+      "role": "button",
+      "text": "Close",
+      "popup": "modal"
+    },
+    {
+      "id": "e02",
+      "role": "textbox",
+      "text": "you@example.com",
+      "popup": "modal"
+    },
+    {
+      "id": "e03",
+      "role": "button",
+      "text": "Subscribe",
+      "popup": "modal"
+    },
+    {
+      "id": "e04",
+      "role": "button",
+      "text": "Not now",
+      "popup": "modal"
+    },
+    {
+      "id": "e05",
+      "role": "button",
+      "text": "Remind me later",
+      "popup": "modal"
+    },
+    {
+      "id": "e56",
+      "role": "link",
+      "text": "Background story number 51 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e106",
+      "role": "link",
+      "text": "Background story number 101 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e06",
+      "role": "link",
+      "text": "Background story number 1 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e57",
+      "role": "link",
+      "text": "Background story number 52 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e107",
+      "role": "link",
+      "text": "Background story number 102 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e07",
+      "role": "link",
+      "text": "Background story number 2 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e58",
+      "role": "link",
+      "text": "Background story number 53 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e108",
+      "role": "link",
+      "text": "Background story number 103 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e08",
+      "role": "link",
+      "text": "Background story number 3 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e59",
+      "role": "link",
+      "text": "Background story number 54 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e109",
+      "role": "link",
+      "text": "Background story number 104 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e09",
+      "role": "link",
+      "text": "Background story number 4 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e60",
+      "role": "link",
+      "text": "Background story number 55 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e110",
+      "role": "link",
+      "text": "Background story number 105 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e10",
+      "role": "link",
+      "text": "Background story number 5 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e61",
+      "role": "link",
+      "text": "Background story number 56 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e111",
+      "role": "link",
+      "text": "Background story number 106 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e11",
+      "role": "link",
+      "text": "Background story number 6 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e62",
+      "role": "link",
+      "text": "Background story number 57 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e112",
+      "role": "link",
+      "text": "Background story number 107 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e12",
+      "role": "link",
+      "text": "Background story number 7 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e63",
+      "role": "link",
+      "text": "Background story number 58 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e113",
+      "role": "link",
+      "text": "Background story number 108 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e13",
+      "role": "link",
+      "text": "Background story number 8 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e64",
+      "role": "link",
+      "text": "Background story number 59 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e114",
+      "role": "link",
+      "text": "Background story number 109 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e14",
+      "role": "link",
+      "text": "Background story number 9 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e65",
+      "role": "link",
+      "text": "Background story number 60 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e115",
+      "role": "link",
+      "text": "Background story number 110 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e15",
+      "role": "link",
+      "text": "Background story number 10 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e66",
+      "role": "link",
+      "text": "Background story number 61 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e116",
+      "role": "link",
+      "text": "Background story number 111 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e16",
+      "role": "link",
+      "text": "Background story number 11 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e67",
+      "role": "link",
+      "text": "Background story number 62 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e117",
+      "role": "link",
+      "text": "Background story number 112 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e17",
+      "role": "link",
+      "text": "Background story number 12 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e68",
+      "role": "link",
+      "text": "Background story number 63 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e118",
+      "role": "link",
+      "text": "Background story number 113 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e18",
+      "role": "link",
+      "text": "Background story number 13 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e69",
+      "role": "link",
+      "text": "Background story number 64 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e119",
+      "role": "link",
+      "text": "Background story number 114 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e19",
+      "role": "link",
+      "text": "Background story number 14 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e70",
+      "role": "link",
+      "text": "Background story number 65 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e120",
+      "role": "link",
+      "text": "Background story number 115 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e20",
+      "role": "link",
+      "text": "Background story number 15 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e71",
+      "role": "link",
+      "text": "Background story number 66 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e121",
+      "role": "link",
+      "text": "Background story number 116 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e21",
+      "role": "link",
+      "text": "Background story number 16 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e72",
+      "role": "link",
+      "text": "Background story number 67 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e122",
+      "role": "link",
+      "text": "Background story number 117 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e22",
+      "role": "link",
+      "text": "Background story number 17 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e156",
+      "role": "button",
+      "text": "Accept all cookies"
+    },
+    {
+      "id": "e157",
+      "role": "button",
+      "text": "Reject non-essential"
+    },
+    {
+      "id": "e73",
+      "role": "link",
+      "text": "Background story number 68 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e123",
+      "role": "link",
+      "text": "Background story number 118 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e23",
+      "role": "link",
+      "text": "Background story number 18 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e74",
+      "role": "link",
+      "text": "Background story number 69 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e124",
+      "role": "link",
+      "text": "Background story number 119 about something interesting",
+      "href": "127.0.0.1/modal.html"
+    },
+    {
+      "id": "e24",
+      "role": "link",
+      "text": "Background story number 19 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e75",
+      "role": "link",
+      "text": "Background story number 70 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e125",
+      "role": "link",
+      "text": "Background story number 120 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e25",
+      "role": "link",
+      "text": "Background story number 20 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e76",
+      "role": "link",
+      "text": "Background story number 71 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e126",
+      "role": "link",
+      "text": "Background story number 121 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e26",
+      "role": "link",
+      "text": "Background story number 21 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e77",
+      "role": "link",
+      "text": "Background story number 72 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e127",
+      "role": "link",
+      "text": "Background story number 122 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e27",
+      "role": "link",
+      "text": "Background story number 22 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e78",
+      "role": "link",
+      "text": "Background story number 73 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e128",
+      "role": "link",
+      "text": "Background story number 123 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e28",
+      "role": "link",
+      "text": "Background story number 23 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e79",
+      "role": "link",
+      "text": "Background story number 74 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e129",
+      "role": "link",
+      "text": "Background story number 124 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e29",
+      "role": "link",
+      "text": "Background story number 24 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e80",
+      "role": "link",
+      "text": "Background story number 75 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e130",
+      "role": "link",
+      "text": "Background story number 125 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e30",
+      "role": "link",
+      "text": "Background story number 25 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e81",
+      "role": "link",
+      "text": "Background story number 76 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e131",
+      "role": "link",
+      "text": "Background story number 126 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e31",
+      "role": "link",
+      "text": "Background story number 26 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e82",
+      "role": "link",
+      "text": "Background story number 77 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e132",
+      "role": "link",
+      "text": "Background story number 127 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e32",
+      "role": "link",
+      "text": "Background story number 27 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e83",
+      "role": "link",
+      "text": "Background story number 78 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e133",
+      "role": "link",
+      "text": "Background story number 128 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e33",
+      "role": "link",
+      "text": "Background story number 28 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e84",
+      "role": "link",
+      "text": "Background story number 79 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e134",
+      "role": "link",
+      "text": "Background story number 129 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e34",
+      "role": "link",
+      "text": "Background story number 29 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e85",
+      "role": "link",
+      "text": "Background story number 80 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e135",
+      "role": "link",
+      "text": "Background story number 130 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e35",
+      "role": "link",
+      "text": "Background story number 30 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e86",
+      "role": "link",
+      "text": "Background story number 81 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e136",
+      "role": "link",
+      "text": "Background story number 131 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    },
+    {
+      "id": "e36",
+      "role": "link",
+      "text": "Background story number 31 about something interesting",
+      "href": "127.0.0.1/modal.html",
+      "below_fold": true
+    }
+  ],
+  "rawCount": 159
+}

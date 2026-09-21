@@ -19,7 +19,12 @@ import { MSG } from "./protocol.js";
   window.__vbContentLoaded = true;
   installOverlay();
 
-  const byId = (id) => document.querySelector(`[data-vb-id="${id}"]`);
+  // Registry filled by the last snapshot (reaches shadow roots + same-origin iframes); DOM query as fallback.
+  const byId = (id) => {
+    const el = window.__vbById?.get(id);
+    if (el && el.isConnected) return el;
+    return document.querySelector(`[data-vb-id="${id}"]`);
+  };
   const vb = () => window.__vb;
 
   function fire(el, type, init = {}) {
@@ -45,7 +50,8 @@ import { MSG } from "./protocol.js";
 
   /** Set an input's value the way a user would, so React/Vue-style controlled inputs notice. */
   function setValue(el, value) {
-    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const w = el.ownerDocument?.defaultView || window; // element may live in a same-origin iframe
+    const proto = el.tagName === "TEXTAREA" ? w.HTMLTextAreaElement.prototype : w.HTMLInputElement.prototype;
     const desc = Object.getOwnPropertyDescriptor(proto, "value");
     if (desc?.set) desc.set.call(el, value);
     else el.value = value;

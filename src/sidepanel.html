@@ -2,83 +2,129 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Voice Browser · Jev</title>
+<title>Voice Browser</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="ui.css" />
+<link rel="stylesheet" href="sidepanel.css" />
 </head>
 <body>
-<header>
-  <h1><span class="dot-title">●</span> voice browser <span class="small" style="font-weight:400">— Jev decides, Chrome acts</span>
-    <span class="r"><a href="options.html" target="_blank" id="optlink" class="small" title="API key, thresholds, connection test">options</a></span></h1>
-  <span class="pill">model <b id="model">–</b></span>
-  <span class="pill">last <b id="lat">–</b> ms · p50 <b id="p50">–</b></span>
-  <span class="pill">calls <b id="calls">0</b> · actions <b id="actions">0</b></span>
-  <span class="pill">cost <b id="cost">$0.000000</b></span>
-  <span class="pill" title="average: last spoken word → decision / → action finished (incl. page load)">word→decide <b id="c2d">–</b> · →done <b id="c2a">–</b> ms</span>
-  <span class="pill" id="apikey">key: …</span>
-  <span class="pill" id="ws">connecting…</span>
+<header class="top">
+  <a class="brand" href="#" id="brand" title="Voice Browser">
+    <svg class="mark" viewBox="0 0 128 128" aria-hidden="true"><circle cx="64" cy="64" r="60" fill="var(--accent)"/><rect x="52" y="30" width="24" height="44" rx="12" fill="var(--accent-ink)"/><path d="M40 66c0 13.3 10.7 24 24 24s24-10.7 24-24" fill="none" stroke="var(--accent-ink)" stroke-width="8" stroke-linecap="round"/><path d="M64 90v11M50 101h28" fill="none" stroke="var(--accent-ink)" stroke-width="8" stroke-linecap="round"/></svg>
+    <span class="wordmark">Voice Browser</span>
+  </a>
+  <div class="top-right">
+    <span class="pill" id="conn" title="connection to the extension"><span class="dot"></span><span id="conntext">connecting</span></span>
+    <button class="iconbtn" id="settingsbtn" title="Settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
 </header>
 
 <main>
-  <!-- speech -->
-  <div class="card">
-    <h2><span class="dot" id="micdot"></span> microphone <span class="r small" id="micstate">off</span></h2>
-    <div id="transcript"><span class="interim">Say something like “go to wikipedia”…</span></div>
-    <div class="row" style="margin-top:8px">
-      <button class="primary" id="micbtn">Start mic</button>
-      <button id="undo" title="go back in the controlled tab">Undo / back</button>
-      <button id="resnap" title="re-scan the elements of the active tab">Re-scan page</button>
+  <!-- hero: the mic -->
+  <section class="hero rise">
+    <button id="micbtn" class="mic" aria-pressed="false" aria-label="Start listening">
+      <span class="ring r1"></span><span class="ring r2"></span>
+      <svg class="micicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3M9 21h6"/></svg>
+    </button>
+    <h1 id="status" class="status">Tap the mic and say something</h1>
+    <p id="substatus" class="substatus">or type a command below</p>
+  </section>
+
+  <!-- alerts: key missing, mic blocked, pop-up, restricted page -->
+  <section id="alerts" class="stack"></section>
+
+  <!-- conversation -->
+  <section id="convo" class="convo" aria-live="polite"></section>
+
+  <!-- first-run guidance -->
+  <section id="empty" class="empty rise">
+    <p class="eyebrow">Try saying</p>
+    <div class="chips" id="chips">
+      <button class="chip" data-say="go to wikipedia">“go to wikipedia”</button>
+      <button class="chip" data-say="search for alan turing">“search for alan turing”</button>
+      <button class="chip" data-say="click the first result">“click the first result”</button>
+      <button class="chip" data-say="scroll down a bit">“scroll down a bit”</button>
+      <button class="chip" data-say="go back">“go back”</button>
+      <button class="chip" data-say="open a new tab">“open a new tab”</button>
     </div>
-    <form id="cmdform" class="row" style="margin-top:8px">
-      <input type="text" id="cmd" placeholder="…or type a command and press Enter" autocomplete="off" />
-      <button type="submit">Run</button>
-    </form>
-    <div id="pending" class="small" style="margin-top:6px"></div>
-    <div id="micnote" class="small" style="margin-top:6px">Speech is recognised by Chrome's Web Speech API (audio goes to Google). Each partial transcript = one Jev request; stale ones are cancelled.</div>
-  </div>
+    <p class="small muted hint">Two commands in one breath work too — “go to example dot com and click the more information link”. Pop-up in the way? Say “close this” or “accept cookies”.</p>
+  </section>
 
-  <!-- decision -->
-  <div class="card">
-    <h2>jev decision <span class="r small" id="decmeta">–</span></h2>
-    <div id="verdict" class="verdict wait">waiting for speech…</div>
-    <div class="small" style="margin-bottom:4px">Policy gates (value vs threshold):</div>
-    <table id="reasons"><thead><tr><th>gate</th><th>value</th><th>thr</th><th>note</th></tr></thead><tbody></tbody></table>
-    <h2 style="margin-top:10px">intent <span class="r small" id="intentconf"></span></h2>
-    <div id="intent"></div>
-    <h2 style="margin-top:10px">yes/no signals</h2>
-    <div id="nouls"></div>
-    <details style="margin-top:8px">
-      <summary class="small">target element <span id="targetconf"></span> · site · scroll · text spans</summary>
-      <h2 style="margin-top:8px">target element</h2>
-      <div id="target"></div>
-      <h2 style="margin-top:10px">site</h2>
-      <div id="site"></div>
-      <h2 style="margin-top:10px">scroll amount</h2>
-      <div id="scroll"></div>
-      <h2 style="margin-top:10px">text to type / search (verbatim candidates)</h2>
-      <div id="spans"></div>
-    </details>
-  </div>
+  <!-- composer -->
+  <form id="cmdform" class="composer">
+    <div class="field">
+      <input type="text" id="cmd" placeholder="Type a command…" autocomplete="off" spellcheck="false" aria-label="Type a command" />
+      <button type="submit" class="iconbtn send inbtn" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      </button>
+    </div>
+  </form>
 
-  <!-- page -->
-  <details class="card">
-    <summary><h2>controlled page <span class="r small" id="tabs"></span></h2></summary>
-    <dl class="kv">
-      <dt>url</dt><dd id="url" class="mono">–</dd>
-      <dt>title</dt><dd id="title">–</dd>
-      <dt>site</dt><dd id="site-name">–</dd>
-      <dt>search box</dt><dd id="sbox" class="mono">–</dd>
-    </dl>
-    <div id="restricted" class="notice" style="display:none;margin-top:8px"></div>
-    <h2 style="margin-top:10px">elements sent to Jev <span class="r small" id="elcount"></span></h2>
-    <div class="scroll" id="elements"></div>
+  <!-- developer details -->
+  <details class="section details" id="details">
+    <summary>Details <span class="pill" id="detailpill"><b id="lat">–</b> ms · $<b id="cost">0.0000</b></span></summary>
+    <div class="stack">
+      <div class="dcard">
+        <p class="eyebrow">This page</p>
+        <dl class="kv">
+          <dt>url</dt><dd id="url" class="mono">–</dd>
+          <dt>title</dt><dd id="title">–</dd>
+          <dt>site</dt><dd id="site-name">–</dd>
+          <dt>search box</dt><dd id="sbox" class="mono">–</dd>
+          <dt>pop-up</dt><dd id="popup">none</dd>
+          <dt>tabs</dt><dd id="tabs">–</dd>
+        </dl>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sm" id="resnap">Re-scan page</button>
+          <button class="btn sm" id="undo">Undo / back</button>
+        </div>
+      </div>
+      <div class="dcard">
+        <p class="eyebrow">Last decision <span id="decmeta" class="muted" style="text-transform:none;letter-spacing:0;font-weight:500"></span></p>
+        <div id="verdict" class="verdict">waiting for speech…</div>
+        <table id="reasons"><thead><tr><th>gate</th><th>value</th><th>thr</th><th>note</th></tr></thead><tbody></tbody></table>
+        <p class="eyebrow" style="margin-top:12px">intent <span id="intentconf" class="muted" style="text-transform:none;letter-spacing:0;font-weight:500"></span></p>
+        <div id="intent"></div>
+        <p class="eyebrow" style="margin-top:12px">yes / no signals</p>
+        <div id="nouls"></div>
+        <p class="eyebrow" style="margin-top:12px">target element <span id="targetconf" class="muted" style="text-transform:none;letter-spacing:0;font-weight:500"></span></p>
+        <div id="target"></div>
+        <p class="eyebrow" style="margin-top:12px">site</p>
+        <div id="site"></div>
+        <p class="eyebrow" style="margin-top:12px">scroll amount</p>
+        <div id="scroll"></div>
+        <p class="eyebrow" style="margin-top:12px">text to type / search (verbatim candidates)</p>
+        <div id="spans"></div>
+      </div>
+      <div class="dcard">
+        <p class="eyebrow">Elements sent to Jev <span id="elcount" class="muted"></span></p>
+        <div class="scroll" id="elements"></div>
+      </div>
+      <div class="dcard">
+        <p class="eyebrow">Session</p>
+        <dl class="kv">
+          <dt>model</dt><dd id="model" class="mono">–</dd>
+          <dt>requests</dt><dd><span id="calls">0</span> · <span id="actions">0</span> actions</dd>
+          <dt>latency</dt><dd>last <span id="lat2">–</span> ms · p50 <span id="p50">–</span> ms</dd>
+          <dt>word → decision</dt><dd><span id="c2d">–</span> ms · → done <span id="c2a">–</span> ms</dd>
+          <dt>input tokens</dt><dd id="tokens">0</dd>
+          <dt>cost</dt><dd>$<span id="cost2">0.000000</span></dd>
+          <dt>last request</dt><dd id="reqid" class="mono">–</dd>
+          <dt>API key</dt><dd id="apikey">…</dd>
+        </dl>
+      </div>
+      <div class="dcard">
+        <p class="eyebrow">Speech events (raw)</p>
+        <div class="log" id="speechlog"><span class="muted small">Start the mic to see recognizer results here.</span></div>
+      </div>
+      <div class="dcard">
+        <p class="eyebrow">Log</p>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
   </details>
-
-  <!-- log -->
-  <div class="card">
-    <h2>action log</h2>
-    <div class="log" id="log"></div>
-  </div>
 </main>
 <script src="sidepanel.js"></script>
 </body>

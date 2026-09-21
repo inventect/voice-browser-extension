@@ -2,79 +2,104 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Voice Browser · options</title>
+<title>Voice Browser · Settings</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="ui.css" />
+<link rel="stylesheet" href="pages.css" />
 </head>
 <body>
-<header>
-  <h1><span class="dot-title">●</span> voice browser — options</h1>
-  <span class="pill">model <b id="model">–</b></span>
-  <span class="pill" id="keystatus">key: …</span>
-</header>
-<main class="wide">
-  <div class="card">
-    <h2>TypeSafe API key</h2>
-    <div class="small" style="margin-bottom:8px">Stored in <code>chrome.storage.local</code> on this device only. It is read by the extension's service worker and sent as a <code>Bearer</code> header to <code>api.typesafe.ai</code> — never to pages, content scripts or anywhere else. Get one at <a href="https://console.typesafe.ai/keys" target="_blank" rel="noopener">console.typesafe.ai/keys</a>.</div>
-    <form id="keyform" class="row">
-      <input type="password" id="apikey" placeholder="paste your key (ts-…)" autocomplete="off" spellcheck="false" />
-      <button type="button" id="toggle" title="show / hide">👁</button>
-      <button type="submit" class="primary">Save</button>
-      <button type="button" id="clear" class="danger">Remove</button>
-    </form>
-    <div class="row" style="margin-top:8px">
-      <button id="test">Test connection (one cheap Noul call)</button>
-      <span id="testresult" class="small"></span>
-    </div>
-    <div id="savemsg" class="small" style="margin-top:6px"></div>
-  </div>
+<div class="page">
+  <header>
+    <a class="brand" href="sidepanel.html" title="Voice Browser">
+      <svg class="mark" viewBox="0 0 128 128" aria-hidden="true"><circle cx="64" cy="64" r="60" fill="var(--accent)"/><rect x="52" y="30" width="24" height="44" rx="12" fill="var(--accent-ink)"/><path d="M40 66c0 13.3 10.7 24 24 24s24-10.7 24-24" fill="none" stroke="var(--accent-ink)" stroke-width="8" stroke-linecap="round"/><path d="M64 90v11M50 101h28" fill="none" stroke="var(--accent-ink)" stroke-width="8" stroke-linecap="round"/></svg>
+      <span class="wordmark">Voice Browser <small>Settings</small></span>
+    </a>
+    <span class="pill" id="keystatus"><span class="dot"></span><span id="keystatustext">checking key</span></span>
+  </header>
 
-  <div class="card">
-    <h2>microphone</h2>
-    <div class="small">The side panel cannot show Chrome's microphone prompt itself. Grant it once on the permission page; the grant applies to the whole extension. Status: <b id="micstate">…</b></div>
-    <div class="row" style="margin-top:8px">
-      <button id="grantmic">Open permission page</button>
-      <button id="micsettings" title="chrome://settings/content/siteDetails?site=chrome-extension://…">Open Chrome site settings for this extension</button>
-    </div>
-  </div>
+  <h1>Settings</h1>
+  <p class="lede">Voice Browser turns what you say into browser actions. It asks TypeSafe’s <b>Jev</b> model a handful of yes/no and multiple-choice questions about your words and the page — in about a third of a second — and then acts in your current tab.</p>
 
-  <div class="grid2">
-    <div class="card">
-      <h2>model pin</h2>
-      <dl class="kv">
-        <dt>model</dt><dd id="model2" class="mono">–</dd>
-        <dt>price</dt><dd id="price">–</dd>
-        <dt>endpoint</dt><dd class="mono">POST https://api.typesafe.ai/v1/systemone</dd>
-        <dt>questions / request</dt><dd id="qcount">–</dd>
-      </dl>
-      <div class="small" style="margin-top:8px">Thresholds below were tuned on this version; aliases move on release, so the version is pinned in <code>src/constants.js</code>.</div>
-    </div>
-    <div class="card">
-      <h2>policy thresholds (read-only, from constants.js)</h2>
-      <table id="thresholds"><thead><tr><th>gate</th><th>threshold</th></tr></thead><tbody></tbody></table>
-    </div>
-  </div>
+  <div class="stack">
+    <section class="card rise">
+      <h2>TypeSafe API key</h2>
+      <p class="desc">Get a key at <a href="https://console.typesafe.ai/keys" target="_blank" rel="noopener">console.typesafe.ai/keys</a>. It is stored only on this device and sent only to <span class="mono">api.typesafe.ai</span>.</p>
+      <form id="keyform" class="row" style="gap:10px">
+        <div class="field" style="flex:1;min-width:220px">
+          <input type="password" id="apikey" class="boxy" placeholder="Paste your key" autocomplete="off" spellcheck="false" style="padding-right:44px" />
+          <button type="button" id="toggle" class="iconbtn inbtn" title="Show / hide" aria-label="Show or hide key">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <button type="submit" class="btn primary">Save</button>
+        <button type="button" id="clear" class="btn quiet">Remove</button>
+      </form>
+      <div class="row" style="margin-top:12px">
+        <button id="test" class="btn">Test connection</button>
+        <span id="testresult" class="result"></span>
+      </div>
+      <p id="savemsg" class="small muted" style="margin-top:8px"></p>
+    </section>
 
-  <div class="card">
-    <h2>questions asked on every transcript update</h2>
-    <table id="questions"><thead><tr><th>id</th><th>question</th></tr></thead><tbody></tbody></table>
-  </div>
+    <section class="card rise" style="animation-delay:.05s">
+      <h2>Microphone</h2>
+      <p class="desc">Chrome can’t show the microphone prompt inside a side panel, so it is asked once on a separate page. The permission belongs to this extension. Status: <b id="micstate">…</b></p>
+      <div class="row">
+        <button id="grantmic" class="btn">Allow microphone</button>
+        <button id="micsettings" class="btn quiet">Chrome site settings</button>
+      </div>
+    </section>
 
-  <div class="card">
-    <h2>permissions this extension uses</h2>
-    <table>
-      <tbody>
-        <tr><td><code>sidePanel</code></td><td>the control UI lives in the side panel</td></tr>
-        <tr><td><code>storage</code></td><td>API key (local) and stats/context across service-worker restarts (session)</td></tr>
-        <tr><td><code>tabs</code></td><td>read the active tab's URL/title, navigate, back/forward, open/close/switch tabs</td></tr>
-        <tr><td><code>scripting</code> + <code>&lt;all_urls&gt;</code></td><td>read the clickable elements of the page you are looking at and click/type/scroll in it — on any site you choose to control by voice</td></tr>
-        <tr><td><code>activeTab</code></td><td>the extension only ever acts on the active tab</td></tr>
-        <tr><td><code>webNavigation</code></td><td>detect that an action led to a navigation (the "outcome" Jev sees in context)</td></tr>
-      </tbody>
-    </table>
-    <div class="small" style="margin-top:6px">No remote code, no analytics. Audio is processed by Chrome's Web Speech API (Google servers); transcripts and a compact list of the page's elements go to TypeSafe.</div>
+    <section class="card rise" style="animation-delay:.1s">
+      <h2>How it works</h2>
+      <div class="steps">
+        <div class="step"><span class="n">1</span><b>You speak</b><p>Chrome’s speech service turns your voice into text, word by word.</p></div>
+        <div class="step"><span class="n">2</span><b>Jev decides</b><p>Your words plus a compact list of the page’s buttons and links are sent to Jev, which answers typed questions — no text generation.</p></div>
+        <div class="step"><span class="n">3</span><b>Chrome acts</b><p>Code applies fixed thresholds and clicks, types, scrolls or navigates in your active tab.</p></div>
+      </div>
+    </section>
+
+    <section class="card rise" style="animation-delay:.15s">
+      <h2>Privacy</h2>
+      <p class="desc" style="margin-bottom:0">Your API key never leaves this device except as a header to TypeSafe. Audio is processed by Chrome’s Web Speech service (Google). Transcripts and the page’s element labels go to TypeSafe; nothing is stored there and nothing is sent anywhere else. No analytics, no remote code. Actions that look irreversible (buy, delete, send, post) wait for you to say “confirm”.</p>
+    </section>
+
+    <details class="section" id="advanced">
+      <summary>Advanced — model pin, thresholds and questions (read-only)</summary>
+      <section class="card">
+        <h2>Model</h2>
+        <dl class="kv">
+          <dt>model</dt><dd id="model" class="mono">–</dd>
+          <dt>price</dt><dd id="price">–</dd>
+          <dt>endpoint</dt><dd class="mono">POST https://api.typesafe.ai/v1/systemone</dd>
+          <dt>questions / request</dt><dd id="qcount">–</dd>
+        </dl>
+        <p class="small muted" style="margin:10px 0 0">The version is pinned in <span class="mono">src/constants.js</span>; the thresholds below were tuned on it.</p>
+      </section>
+      <section class="card">
+        <h2>Policy thresholds</h2>
+        <table id="thresholds"><thead><tr><th>gate</th><th>threshold</th></tr></thead><tbody></tbody></table>
+      </section>
+      <section class="card">
+        <h2>Questions asked on every transcript update</h2>
+        <table id="questions"><thead><tr><th>id</th><th>question</th></tr></thead><tbody></tbody></table>
+      </section>
+      <section class="card">
+        <h2>Permissions</h2>
+        <table>
+          <tbody>
+            <tr><td class="mono">sidePanel</td><td>the control UI lives in the side panel</td></tr>
+            <tr><td class="mono">storage</td><td>API key (local) and stats/context across service-worker restarts (session)</td></tr>
+            <tr><td class="mono">tabs</td><td>read the active tab’s URL/title, navigate, back/forward, open/close/switch tabs</td></tr>
+            <tr><td class="mono">scripting + &lt;all_urls&gt;</td><td>read the clickable elements of the page you are looking at and click/type/scroll in it — on any site you choose to control by voice</td></tr>
+            <tr><td class="mono">activeTab</td><td>the extension only ever acts on the active tab</td></tr>
+            <tr><td class="mono">webNavigation</td><td>detect that an action led to a navigation</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </details>
   </div>
-</main>
+</div>
 <script src="options.js"></script>
 </body>
 </html>

@@ -70,6 +70,8 @@ export function encodeElement(el, pageHost = "") {
     const host = el.href.split("/")[0];
     if (host && host !== pageHost) s += ` → ${host}`;
   }
+  if (el.popup) s += " [popup]";
+  if (el.frame) s += " [in frame]";
   if (el.below_fold) s += " [below fold]";
   return s;
 }
@@ -121,10 +123,15 @@ export function buildRequest({ transcript, snapshot, pendingConfirmation = null,
       title: (snapshot?.title || "").slice(0, 120),
       site: snapshot?.site || "blank",
     },
-    // One compact line per element, in visual order (viewport first). The `target` question's
-    // options are these ids; their text lives here (semantic-find pattern) to halve token use.
+    // One compact line per element, in visual order (pop-up controls, then viewport, then the rest).
+    // The `target` question's options are these ids; their text lives here (semantic-find pattern).
     elements: elements.map((el) => encodeElement(el, pageHost)),
   };
+  if (snapshot?.popup) {
+    state.page.modal_open = true;
+    state.page.modal_kind = snapshot.popup.kind === "banner" ? "banner (e.g. cookie consent)" : "dialog";
+    state.page.modal_text = String(snapshot.popup.text || "").slice(0, 120);
+  }
   const ctx = encodeContext(context);
   if (ctx) state.context = ctx;
   if (pendingConfirmation) state.pending_confirmation = pendingConfirmation;

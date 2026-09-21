@@ -14,7 +14,7 @@ export function mockDecide({ latency = 20, complete = (t) => (t.split(" ").lengt
       e.name = "AbortError";
       throw e;
     }
-    const t = transcript.toLowerCase();
+    const t = transcript.toLowerCase().replace(/^(and then|and|then)\s+/, ""); // the tail of a chained breath
     const ch = (c, conf = 0.95, extra = {}) => ({ type: "choice", choice: c, confidence: conf, probabilities: { [c]: conf, ...extra } });
     let intent = ch("none", 0.9);
     let target = ch("none", 0.9);

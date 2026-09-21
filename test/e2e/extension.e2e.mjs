@@ -23,6 +23,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { MSG, PORT_NAME } from "../../src/protocol.js";
 import { MODEL } from "../../src/constants.js";
+import { servePages } from "./serve-pages.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "..", "dist");
@@ -92,10 +93,57 @@ const STEPS = [
   // Two commands in one breath: the first executes as soon as it is complete, the rest becomes a new command.
   { say: "go to example dot com and click the more information link", multi: true, expect: (s) => s.url.includes("iana.org") },
   { say: "so anyway I think we should get lunch", expectNoAction: true, expect: () => true },
+
+  // ---- local test pages (served from test/e2e/pages) -------------------------------------------
+  // A newsletter dialog (role=dialog, aria-modal, shadow-root button) over 150 links + a cookie banner.
+  {
+    say: "close this",
+    setup: async ({ nav, local }) => nav(`${local}/modal.html`),
+    expect: (s) => (s.probe?.clicks || []).includes("close") && !s.probe?.modalOpen,
+    note: (s) => `popup was ${s.before?.snapshotPopup || "?"} → clicked ${s.context?.recentActions?.at(-1)?.targetLabel}`,
+  },
+  {
+    say: "accept cookies",
+    expect: (s) => (s.probe?.clicks || []).includes("accept-cookies"),
+    note: (s) => `banner → clicked ${s.context?.recentActions?.at(-1)?.targetLabel}`,
+  },
+  // Bug 2 candidate 1: content.js declared for <all_urls> AND injected on demand — inject it two more
+  // times and make sure one scroll message scrolls exactly once.
+  {
+    say: "scroll down",
+    setup: async ({ injectContent }) => {
+      await injectContent();
+      await injectContent();
+    },
+    expect: (s) => s.scrollY > 300 && s.scrollY < 1.5 * 0.85 * 900,
+    note: (s) => `scrollY=${s.scrollY} after 3 injections (one page ≈ ${Math.round(0.85 * 900)})`,
+  },
+  // Bug 2 candidate 2: "go back" delivered by the recognizer as interim → final → again under a new
+  // result index → again after auto-restart. History A → B → C; must land on B exactly.
+  {
+    say: "go back",
+    setup: async ({ nav, local }) => {
+      await nav(`${local}/page-a.html`);
+      await nav(`${local}/page-b.html`);
+      await nav(`${local}/page-c.html`);
+    },
+    speech: [
+      { text: "go", final: false, id: "gb-1", wait: 250 },
+      { text: "go back", final: false, id: "gb-1", wait: 250 },
+      { text: "go back", final: true, id: "gb-1", wait: 300 },
+      { text: "Go back.", final: true, id: "gb-2", wait: 300 }, // re-indexed final result
+      { text: "go back", final: false, id: "gb-3", wait: 300 }, // replayed after the recognizer restarted
+      { text: "go back", final: true, id: "gb-3", wait: 0 },
+    ],
+    settleMs: 3000,
+    expect: (s) => /page-b\.html$/.test(s.url),
+    note: (s) => `${s.actions - (s.before?.actions ?? 0)} history step(s), landed on ${s.url.split("/").pop()}`,
+  },
 ];
 
 async function main() {
   const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), "vb-ext-e2e-"));
+  const local = await servePages();
   const context = await chromium.launchPersistentContext(profileDir, {
     headless: !HEADED,
     channel: "chromium", // required for extensions in headless mode (Playwright docs)
@@ -130,10 +178,11 @@ async function main() {
   // the real UI, connected to the worker over the real port.
   const panel = context.pages()[0] || (await context.newPage());
   await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
-  await waitFor(() => panel.evaluate(() => document.getElementById("ws")?.textContent === "connected" && /key/.test(document.getElementById("apikey")?.textContent || "")), { timeout: 8000 });
+  await waitFor(() => panel.evaluate(() => document.getElementById("conntext")?.textContent === "ready" && /set|missing/.test(document.getElementById("apikey")?.textContent || "")), { timeout: 8000 });
   const keyPill = await panel.evaluate(() => document.getElementById("apikey").textContent);
   const speechApi = await panel.evaluate(() => Boolean(window.SpeechRecognition || window.webkitSpeechRecognition));
-  console.log(`side panel: ${await panel.evaluate(() => document.getElementById("ws").textContent)} · ${keyPill.replace(/[A-Za-z0-9]{4}(?=\s|$)/, "****")} · Web Speech API ${speechApi ? "available" : "NOT available"}`);
+  const noKeyAlert = await panel.evaluate(() => Boolean(document.querySelector("#alerts .notice.warn")));
+  console.log(`side panel: ${await panel.evaluate(() => document.getElementById("conntext").textContent)} · key ${keyPill.replace(/[A-Za-z0-9]{4}\)$/, "****)")} · missing-key card ${noKeyAlert ? "shown (unexpected)" : "hidden"} · Web Speech API ${speechApi ? "available" : "NOT available"}`);
   // Collect worker → panel events through a second port (same protocol the panel uses).
   await panel.evaluate((portName) => {
     window.__events = [];
@@ -155,15 +204,43 @@ async function main() {
       const id = app.browser.activeTabId;
       const tab = id != null ? await chrome.tabs.get(id).catch(() => null) : null;
       let scrollY = null;
+      let probe = null;
       if (tab && /^https?:/.test(tab.url || "")) {
         try {
-          const [r] = await chrome.scripting.executeScript({ target: { tabId: id }, func: () => Math.round(window.scrollY) });
-          scrollY = r?.result ?? null;
+          const [r] = await chrome.scripting.executeScript({
+            target: { tabId: id },
+            world: "MAIN", // the test pages record clicks on the page's own window
+            func: () => ({
+              scrollY: Math.round(window.scrollY),
+              clicks: window.__clicks || null,
+              historyGoCalls: window.__historyGoCalls ?? null,
+              modalOpen: Boolean(document.querySelector("#modal.open")),
+            }),
+          });
+          scrollY = r?.result?.scrollY ?? null;
+          probe = r?.result ?? null;
         } catch {}
       }
       const tabs = (await chrome.tabs.query({})).filter((t) => !(t.url || "").startsWith(`chrome-extension://${chrome.runtime.id}/`));
       const ui = app.controller.uiState();
-      return { url: tab?.url || "", scrollY, tabCount: tabs.length, actions: ui.stats.actions, stats: ui.stats, candidates: ui.candidates, pending: ui.pending, context: ui.context, log: ui.log.slice(-12) };
+      return { url: tab?.url || "", scrollY, probe, snapshotPopup: ui.snapshot?.popup?.kind || null, tabCount: tabs.length, actions: ui.stats.actions, stats: ui.stats, candidates: ui.candidates, pending: ui.pending, context: ui.context, log: ui.log.slice(-12) };
+    });
+  /** Navigate the controlled tab (as the user would, by typing a URL) and wait for it to load. */
+  const nav = (url) =>
+    sw.evaluate(async (u) => {
+      const app = globalThis.__vbApp;
+      const tab = await app.browser.activeTab();
+      const done = app.browser.waitForNavigation(tab.id, { startMs: 3000, completeMs: 10000 });
+      await chrome.tabs.update(tab.id, { url: u });
+      await done;
+      await new Promise((r) => setTimeout(r, 250));
+      await app.controller.refreshSnapshot();
+    }, url);
+  const injectContent = () =>
+    sw.evaluate(async () => {
+      const app = globalThis.__vbApp;
+      const tab = await app.browser.activeTab();
+      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
     });
 
   console.log(`\nvoice-browser-extension e2e · model ${MODEL} · ${HEADED ? "headed" : "headless"} Chromium · extension ${extensionId} · ${WORD_MS}ms per spoken word\n`);
@@ -173,7 +250,7 @@ async function main() {
   for (const step of STEPS) {
     stepNo += 1;
     if (ONLY && !ONLY.includes(stepNo)) continue;
-    results.push(await runStep(step, stepNo, { send, events, state, panel }));
+    results.push(await runStep(step, stepNo, { send, events, state, panel, nav, local: local.url, injectContent }));
     await sleep(500);
   }
 
@@ -200,6 +277,7 @@ async function main() {
     await sleep(6000);
   }
   await context.close();
+  await local.close();
   fs.rmSync(profileDir, { recursive: true, force: true });
   process.exit(passed === results.length && micResult === "granted" ? 0 : 1);
 }
@@ -208,9 +286,10 @@ async function main() {
  * Feed a phrase word by word as partial transcripts (or type it into the side panel); resolve
  * when the extension acts (or shows candidates / asks for confirmation), then check the outcome.
  */
-async function runStep(step, no, { send, events, state, panel }) {
+async function runStep(step, no, { send, events, state, panel, nav, local, injectContent }) {
   const words = step.say.split(" ");
   const utteranceId = `e2e-${no}`;
+  if (step.setup) await step.setup({ nav, local, injectContent });
   const before = await state();
   let actedAt = null;
   let latency = null;
@@ -239,7 +318,17 @@ async function runStep(step, no, { send, events, state, panel }) {
   };
 
   process.stdout.write(`${no}. "${step.say}" `);
-  if (step.viaUi) {
+  if (step.speech) {
+    // scripted recognizer events (interim / final / re-delivered under new ids)
+    for (const ev of step.speech) {
+      await send({ type: MSG.TRANSCRIPT, text: ev.text, final: ev.final, utteranceId: ev.id });
+      process.stdout.write(ev.final ? "!" : ".");
+      await sleep(ev.wait);
+      await poll();
+    }
+    await sleep(step.settleMs || 1000);
+    await poll();
+  } else if (step.viaUi) {
     await panel.bringToFront();
     await panel.fill("#cmd", step.say);
     await panel.press("#cmd", "Enter");
@@ -311,6 +400,7 @@ async function runStep(step, no, { send, events, state, panel }) {
       ),
     );
     if (!outcome) note = "no action within timeout";
+    if (typeof step.note === "function") note = step.note({ ...st, before });
     if (step.correction && ok) note = `correction reversed: ${firstAction?.action?.type || "?"}`;
     if (step.followUpOnCandidates && ok) note = candidates ? `disambiguated by number → ${st.context?.recentActions?.at(-1)?.targetLabel || "?"}` : "Jev was confident, clicked directly";
   }
