@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.e2e-profile*/
+test-results/
+*.log
+.env
+.env.*

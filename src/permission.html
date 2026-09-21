@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Voice Browser · microphone permission</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="ui.css" />
+</head>
+<body>
+<header><h1><span class="dot-title">●</span> voice browser — microphone permission</h1></header>
+<main class="wide">
+  <div class="card">
+    <h2>one-time microphone access</h2>
+    <p class="small" style="margin:0 0 10px">Chrome cannot show the microphone prompt inside a side panel, so it is requested here once. The permission belongs to the extension (<code id="origin">chrome-extension://…</code>), so afterwards the side panel can listen. Choose <b>Allow</b> (not "Allow this time") in the prompt.</p>
+    <div id="status" class="notice">Requesting microphone access…</div>
+    <div class="row" style="margin-top:10px">
+      <button id="retry" class="primary">Request microphone access</button>
+      <button id="settings">Open Chrome site settings for this extension</button>
+      <button id="close">Close this tab</button>
+    </div>
+    <p class="small" style="margin-top:10px">If the prompt does not appear: click the icon left of the address bar → Site settings → Microphone → Allow, or use the button above. Then go back to the side panel and press <b>Start mic</b> (it starts automatically when it sees the grant).</p>
+  </div>
+</main>
+<script src="permission.js"></script>
+</body>
+</html>

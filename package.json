@@ -1,0 +1,24 @@
+{
+  "name": "voice-browser-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Chrome extension (MV3): control your own browser by voice. Jev (TypeSafe System One, jev-1.13.0) decides intent/target in ~300 ms; the extension acts on the active tab.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "test": "node --test 'test/unit/**/*.test.js'",
+    "test:integration": "node --test 'test/integration/**/*.test.js'",
+    "test:e2e": "npm run build && node test/e2e/extension.e2e.mjs",
+    "test:e2e:headed": "npm run build && node test/e2e/extension.e2e.mjs --headed",
+    "test:all": "npm test && npm run test:integration && npm run test:e2e"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "playwright": "^1.63.0"
+  },
+  "license": "MIT"
+}

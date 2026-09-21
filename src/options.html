@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Voice Browser · options</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="ui.css" />
+</head>
+<body>
+<header>
+  <h1><span class="dot-title">●</span> voice browser — options</h1>
+  <span class="pill">model <b id="model">–</b></span>
+  <span class="pill" id="keystatus">key: …</span>
+</header>
+<main class="wide">
+  <div class="card">
+    <h2>TypeSafe API key</h2>
+    <div class="small" style="margin-bottom:8px">Stored in <code>chrome.storage.local</code> on this device only. It is read by the extension's service worker and sent as a <code>Bearer</code> header to <code>api.typesafe.ai</code> — never to pages, content scripts or anywhere else. Get one at <a href="https://console.typesafe.ai/keys" target="_blank" rel="noopener">console.typesafe.ai/keys</a>.</div>
+    <form id="keyform" class="row">
+      <input type="password" id="apikey" placeholder="paste your key (ts-…)" autocomplete="off" spellcheck="false" />
+      <button type="button" id="toggle" title="show / hide">👁</button>
+      <button type="submit" class="primary">Save</button>
+      <button type="button" id="clear" class="danger">Remove</button>
+    </form>
+    <div class="row" style="margin-top:8px">
+      <button id="test">Test connection (one cheap Noul call)</button>
+      <span id="testresult" class="small"></span>
+    </div>
+    <div id="savemsg" class="small" style="margin-top:6px"></div>
+  </div>
+
+  <div class="card">
+    <h2>microphone</h2>
+    <div class="small">The side panel cannot show Chrome's microphone prompt itself. Grant it once on the permission page; the grant applies to the whole extension. Status: <b id="micstate">…</b></div>
+    <div class="row" style="margin-top:8px">
+      <button id="grantmic">Open permission page</button>
+      <button id="micsettings" title="chrome://settings/content/siteDetails?site=chrome-extension://…">Open Chrome site settings for this extension</button>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>model pin</h2>
+      <dl class="kv">
+        <dt>model</dt><dd id="model2" class="mono">–</dd>
+        <dt>price</dt><dd id="price">–</dd>
+        <dt>endpoint</dt><dd class="mono">POST https://api.typesafe.ai/v1/systemone</dd>
+        <dt>questions / request</dt><dd id="qcount">–</dd>
+      </dl>
+      <div class="small" style="margin-top:8px">Thresholds below were tuned on this version; aliases move on release, so the version is pinned in <code>src/constants.js</code>.</div>
+    </div>
+    <div class="card">
+      <h2>policy thresholds (read-only, from constants.js)</h2>
+      <table id="thresholds"><thead><tr><th>gate</th><th>threshold</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>questions asked on every transcript update</h2>
+    <table id="questions"><thead><tr><th>id</th><th>question</th></tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="card">
+    <h2>permissions this extension uses</h2>
+    <table>
+      <tbody>
+        <tr><td><code>sidePanel</code></td><td>the control UI lives in the side panel</td></tr>
+        <tr><td><code>storage</code></td><td>API key (local) and stats/context across service-worker restarts (session)</td></tr>
+        <tr><td><code>tabs</code></td><td>read the active tab's URL/title, navigate, back/forward, open/close/switch tabs</td></tr>
+        <tr><td><code>scripting</code> + <code>&lt;all_urls&gt;</code></td><td>read the clickable elements of the page you are looking at and click/type/scroll in it — on any site you choose to control by voice</td></tr>
+        <tr><td><code>activeTab</code></td><td>the extension only ever acts on the active tab</td></tr>
+        <tr><td><code>webNavigation</code></td><td>detect that an action led to a navigation (the "outcome" Jev sees in context)</td></tr>
+      </tbody>
+    </table>
+    <div class="small" style="margin-top:6px">No remote code, no analytics. Audio is processed by Chrome's Web Speech API (Google servers); transcripts and a compact list of the page's elements go to TypeSafe.</div>
+  </div>
+</main>
+<script src="options.js"></script>
+</body>
+</html>

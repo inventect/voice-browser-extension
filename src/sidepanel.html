@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Voice Browser · Jev</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="ui.css" />
+</head>
+<body>
+<header>
+  <h1><span class="dot-title">●</span> voice browser <span class="small" style="font-weight:400">— Jev decides, Chrome acts</span>
+    <span class="r"><a href="options.html" target="_blank" id="optlink" class="small" title="API key, thresholds, connection test">options</a></span></h1>
+  <span class="pill">model <b id="model">–</b></span>
+  <span class="pill">last <b id="lat">–</b> ms · p50 <b id="p50">–</b></span>
+  <span class="pill">calls <b id="calls">0</b> · actions <b id="actions">0</b></span>
+  <span class="pill">cost <b id="cost">$0.000000</b></span>
+  <span class="pill" title="average: last spoken word → decision / → action finished (incl. page load)">word→decide <b id="c2d">–</b> · →done <b id="c2a">–</b> ms</span>
+  <span class="pill" id="apikey">key: …</span>
+  <span class="pill" id="ws">connecting…</span>
+</header>
+
+<main>
+  <!-- speech -->
+  <div class="card">
+    <h2><span class="dot" id="micdot"></span> microphone <span class="r small" id="micstate">off</span></h2>
+    <div id="transcript"><span class="interim">Say something like “go to wikipedia”…</span></div>
+    <div class="row" style="margin-top:8px">
+      <button class="primary" id="micbtn">Start mic</button>
+      <button id="undo" title="go back in the controlled tab">Undo / back</button>
+      <button id="resnap" title="re-scan the elements of the active tab">Re-scan page</button>
+    </div>
+    <form id="cmdform" class="row" style="margin-top:8px">
+      <input type="text" id="cmd" placeholder="…or type a command and press Enter" autocomplete="off" />
+      <button type="submit">Run</button>
+    </form>
+    <div id="pending" class="small" style="margin-top:6px"></div>
+    <div id="micnote" class="small" style="margin-top:6px">Speech is recognised by Chrome's Web Speech API (audio goes to Google). Each partial transcript = one Jev request; stale ones are cancelled.</div>
+  </div>
+
+  <!-- decision -->
+  <div class="card">
+    <h2>jev decision <span class="r small" id="decmeta">–</span></h2>
+    <div id="verdict" class="verdict wait">waiting for speech…</div>
+    <div class="small" style="margin-bottom:4px">Policy gates (value vs threshold):</div>
+    <table id="reasons"><thead><tr><th>gate</th><th>value</th><th>thr</th><th>note</th></tr></thead><tbody></tbody></table>
+    <h2 style="margin-top:10px">intent <span class="r small" id="intentconf"></span></h2>
+    <div id="intent"></div>
+    <h2 style="margin-top:10px">yes/no signals</h2>
+    <div id="nouls"></div>
+    <details style="margin-top:8px">
+      <summary class="small">target element <span id="targetconf"></span> · site · scroll · text spans</summary>
+      <h2 style="margin-top:8px">target element</h2>
+      <div id="target"></div>
+      <h2 style="margin-top:10px">site</h2>
+      <div id="site"></div>
+      <h2 style="margin-top:10px">scroll amount</h2>
+      <div id="scroll"></div>
+      <h2 style="margin-top:10px">text to type / search (verbatim candidates)</h2>
+      <div id="spans"></div>
+    </details>
+  </div>
+
+  <!-- page -->
+  <details class="card">
+    <summary><h2>controlled page <span class="r small" id="tabs"></span></h2></summary>
+    <dl class="kv">
+      <dt>url</dt><dd id="url" class="mono">–</dd>
+      <dt>title</dt><dd id="title">–</dd>
+      <dt>site</dt><dd id="site-name">–</dd>
+      <dt>search box</dt><dd id="sbox" class="mono">–</dd>
+    </dl>
+    <div id="restricted" class="notice" style="display:none;margin-top:8px"></div>
+    <h2 style="margin-top:10px">elements sent to Jev <span class="r small" id="elcount"></span></h2>
+    <div class="scroll" id="elements"></div>
+  </details>
+
+  <!-- log -->
+  <div class="card">
+    <h2>action log</h2>
+    <div class="log" id="log"></div>
+  </div>
+</main>
+<script src="sidepanel.js"></script>
+</body>
+</html>
