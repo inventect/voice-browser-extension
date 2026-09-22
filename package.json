@@ -4,6 +4,14 @@
   "private": true,
   "type": "module",
   "description": "Chrome extension (MV3): control your own browser by voice. Jev (TypeSafe System One, jev-1.13.0) decides intent/target in ~300 ms; the extension acts on the active tab.",
+  "homepage": "https://github.com/moritzkremb/jev-voice-browser#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moritzkremb/jev-voice-browser.git"
+  },
+  "bugs": {
+    "url": "https://github.com/moritzkremb/jev-voice-browser/issues"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -19,7 +27,7 @@
     "ui:shots": "npm run build && node scripts/ui-screenshots.mjs"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.28.2",
     "playwright": "^1.63.0"
   },
   "license": "MIT"

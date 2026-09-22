@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "Control your own browser by voice. Jev (TypeSafe System One) decides intent and target in ~300 ms; the extension acts on the active tab.",
   "minimum_chrome_version": "116",
-  "permissions": ["sidePanel", "storage", "tabs", "scripting", "activeTab", "webNavigation"],
+  "permissions": ["sidePanel", "storage", "tabs", "scripting", "webNavigation"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js",

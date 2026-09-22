@@ -160,6 +160,11 @@ export function collectElementsInPage() {
   function visit(el, frame, popupKind) {
     if (seen.has(el) || out.length >= MAX_RAW) return;
     seen.add(el);
+    const tag = el.tagName.toLowerCase();
+    const type = (el.getAttribute("type") || "").toLowerCase();
+    // Never inspect or expose password fields. User-entered values in other fields are also
+    // intentionally omitted below; labels/placeholders are enough to choose a target.
+    if (tag === "input" && type === "password") return;
     let rect;
     try {
       rect = el.getBoundingClientRect();
@@ -184,8 +189,6 @@ export function collectElementsInPage() {
     }
     registry.set(id, el);
 
-    const tag = el.tagName.toLowerCase();
-    const type = (el.getAttribute("type") || "").toLowerCase();
     let role = el.getAttribute("role") || "";
     if (!role) {
       if (tag === "a") role = "link";
@@ -203,10 +206,11 @@ export function collectElementsInPage() {
     }
 
     const img = el.querySelector && el.querySelector("img[alt]");
+    const controlLabel = tag === "input" && ["button", "submit", "reset"].includes(type) ? clean(el.value) : "";
     const name =
       clean(el.getAttribute("aria-label")) ||
       clean(el.innerText) ||
-      clean(el.value) ||
+      controlLabel ||
       clean(el.getAttribute("placeholder")) ||
       clean(el.getAttribute("title")) ||
       (img && clean(img.getAttribute("alt"))) ||

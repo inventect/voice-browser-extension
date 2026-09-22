@@ -1,14 +1,13 @@
 # Voice Browser — control *your own* Chrome by voice
 
-A Manifest V3 Chrome extension port of [voice-browser](../voice-browser/). Open the side panel, tap
-the mic, and talk: "go to wikipedia", "search for alan turing", "click the first result", "scroll
-down a bit", "go back", "no, not that one", "close this" (when a pop-up is in the way). Speech
-streams word by word from the side panel to the extension's service worker; on every partial
-transcript the worker asks **Jev** (TypeSafe's System One model, pinned `jev-1.13.0`) one request
-with ~12 typed questions — intent, target element, site, "is the command finished?", "is this even
-for me?", "is it destructive?", "is this a correction?" — gets typed probabilities back in ~300 ms,
-and code decides whether to act, wait, ask, or ignore. Then the extension acts on the tab you are
-looking at.
+A Manifest V3 Chrome extension. Open the side panel, tap the mic, and talk: "go to wikipedia",
+"search for alan turing", "click the first result", "scroll down a bit", "go back", "no, not that
+one", "close this" (when a pop-up is in the way). Speech streams word by word from the side panel
+to the extension's service worker; on every partial transcript the worker asks **Jev** (TypeSafe's
+System One model, pinned `jev-1.13.0`) one request with ~12 typed questions — intent, target element,
+site, "is the command finished?", "is this even for me?", "is it destructive?", "is this a
+correction?" — gets typed probabilities back in ~300 ms, and code decides whether to act, wait,
+ask, or ignore. Then the extension acts on the tab you are looking at.
 
 Jev never generates text. Search queries, typed text and URLs are extracted as candidate spans by
 code and Jev only *picks* one, which is copied verbatim.
@@ -196,7 +195,6 @@ after every decision/action and restored when the worker restarts.
 | `storage` | API key in `chrome.storage.local` (this device only); stats/context in `chrome.storage.session` |
 | `tabs` | read the active tab's URL/title, navigate it, back/forward/reload, open/close/switch tabs |
 | `scripting` + host permission `<all_urls>` | read the clickable elements of the page you are looking at and click/type/scroll in it. Voice control has to work on whatever site you are on, so it cannot be limited to a fixed host list. |
-| `activeTab` | the extension only ever acts on the active tab |
 | `webNavigation` | detect that an action led to a navigation (the `outcome` in Jev's context) |
 
 Safety: destructive clicks (buy, delete, send, post, log out) need a spoken "confirm"; the extension
@@ -205,6 +203,13 @@ acts only on the active tab; the API key is read only by the service worker and 
 sees a masked status only); no remote code; no analytics. Treat "confirm" as a convenience, not a
 guarantee — do not run this in a profile logged into anything a mis-heard "click place order"
 could hurt.
+
+## Privacy
+
+To interpret a command, the extension sends the transcript, active page URL/title, a compact list
+of actionable page elements, and limited recent-action context to `api.typesafe.ai`. Chrome's Web
+Speech API may send microphone audio to Google for transcription. The extension does not record
+audio, run analytics, or operate its own server. See the complete [privacy policy](PRIVACY.md).
 
 ## Tests
 
