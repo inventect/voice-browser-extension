@@ -10,6 +10,10 @@ browser commands. It does not sell personal data, serve ads, or use analytics.
 - Voice input is transcribed by Chrome's Web Speech API. Depending on the user's Chrome
   configuration, Google may process the audio under Google's applicable privacy terms. Voice
   Browser does not record or store microphone audio.
+- If the user saves an ElevenLabs API key, voice input is instead streamed to ElevenLabs'
+  real-time speech-to-text service (`api.elevenlabs.io`) while the microphone is on, together with
+  up to 50 visible on-screen labels used as recognition hints. The key is stored in
+  `chrome.storage.local` and is sent only to ElevenLabs, to obtain short-lived single-use tokens.
 - The command transcript, active page URL and title, a limited snapshot of actionable page
   elements (such as visible labels, links, and form-field descriptions), and up to three recent
   actions are sent to TypeSafe's System One API at `api.typesafe.ai` to determine the intended
@@ -23,7 +27,7 @@ browser commands. It does not sell personal data, serve ads, or use analytics.
 
 Voice Browser sends data only to the service providers required for speech transcription and
 command interpretation, as described above. The extension itself has no server and does not
-maintain a user database. Retention by Google and TypeSafe is governed by their respective terms
+maintain a user database. Retention by Google, ElevenLabs, and TypeSafe is governed by their respective terms
 and privacy policies. Data is not sold, used for advertising, used to determine creditworthiness,
 or transferred for purposes unrelated to the extension's single purpose.
 
@@ -35,7 +39,7 @@ tab. A detailed explanation of each Chrome permission is available in the projec
 
 ## User controls
 
-Users can stop microphone access in Chrome's site settings, remove the saved API key from the
+Users can stop microphone access in Chrome's site settings, remove the saved API keys from the
 extension settings, clear extension storage, or uninstall the extension at any time.
 
 ## Contact

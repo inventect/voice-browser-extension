@@ -11,13 +11,30 @@ import { configureJev, decide, testConnection } from "./jev.js";
 import { execute } from "./executor.js";
 import { MODEL, QUESTIONS, T } from "./constants.js";
 import { MSG, PORT_NAME } from "./protocol.js";
+import { mintScribeToken } from "./scribe-util.js";
 
 const SESSION_KEY = "vbState";
 const KEY_NAME = "apiKey";
+// Local addition: ElevenLabs key + engine choice ("auto" = ElevenLabs when a key is saved).
+const STT_KEY_NAME = "elevenLabsKey";
+const STT_ENGINE_NAME = "sttEngine";
+export const STT_ENGINES = ["auto", "elevenlabs", "chrome"];
 
 export async function readApiKey(chrome) {
   const got = await chrome.storage.local.get(KEY_NAME);
   return String(got?.[KEY_NAME] || "").trim();
+}
+
+export async function readSttKey(chrome) {
+  const got = await chrome.storage.local.get(STT_KEY_NAME);
+  return String(got?.[STT_KEY_NAME] || "").trim();
+}
+
+/** Which recogniser the side panel should use. */
+export function resolveEngine(engine, hasKey) {
+  if (engine === "chrome") return "chrome";
+  if (engine === "elevenlabs") return "elevenlabs";
+  return hasKey ? "elevenlabs" : "chrome";
 }
 
 export function maskKey(key) {
@@ -29,7 +46,7 @@ export function maskKey(key) {
  * @param {{chrome?: object, decideFn?: Function, executeFn?: Function}} opts
  * @returns {Promise<{controller: Controller, browser: ChromeBrowser, handleMessage: Function, onConnect: Function, ports: Set}>}
  */
-export async function createApp({ chrome = globalThis.chrome, decideFn = decide, executeFn = execute } = {}) {
+export async function createApp({ chrome = globalThis.chrome, decideFn = decide, executeFn = execute, sttFetch } = {}) {
   configureJev({ getApiKey: () => readApiKey(chrome) });
 
   const browser = new ChromeBrowser(chrome);
@@ -94,6 +111,14 @@ export async function createApp({ chrome = globalThis.chrome, decideFn = decide,
     return { hasKey: Boolean(key), masked: maskKey(key), model: MODEL };
   }
 
+  async function sttStatus() {
+    const key = await readSttKey(chrome);
+    const got = await chrome.storage.local.get(STT_ENGINE_NAME);
+    const engine = STT_ENGINES.includes(got?.[STT_ENGINE_NAME]) ? got[STT_ENGINE_NAME] : "auto";
+    return { hasKey: Boolean(key), masked: maskKey(key), engine, resolved: resolveEngine(engine, Boolean(key)) };
+  }
+  const mint = (apiKey) => mintScribeToken({ apiKey, ...(sttFetch ? { fetchFn: sttFetch } : {}) });
+
   /** Request/response handler for chrome.runtime.onMessage (and port messages). */
   async function handleMessage(msg, sender = null) {
     if (!msg || typeof msg.type !== "string") return { error: "bad message" };
@@ -131,6 +156,24 @@ export async function createApp({ chrome = globalThis.chrome, decideFn = decide,
       }
       case MSG.PING:
         return { ok: true, t: Date.now() };
+      case MSG.STT_STATUS:
+        return sttStatus();
+      case MSG.SET_STT: {
+        if ("apiKey" in msg) {
+          const key = String(msg.apiKey || "").trim();
+          if (key) await chrome.storage.local.set({ [STT_KEY_NAME]: key });
+          else await chrome.storage.local.remove(STT_KEY_NAME);
+        }
+        if ("engine" in msg && STT_ENGINES.includes(msg.engine)) await chrome.storage.local.set({ [STT_ENGINE_NAME]: msg.engine });
+        return sttStatus();
+      }
+      case MSG.STT_TOKEN:
+        return mint(await readSttKey(chrome));
+      case MSG.TEST_STT: {
+        const t0 = Date.now();
+        const r = await mint(msg.apiKey ? String(msg.apiKey).trim() : await readSttKey(chrome));
+        return r.ok ? { ok: true, latencyMs: Date.now() - t0 } : r;
+      }
       default:
         return { error: `unknown message type ${msg.type}` };
     }

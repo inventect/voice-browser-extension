@@ -41,6 +41,33 @@
       <p id="savemsg" class="small muted" style="margin-top:8px"></p>
     </section>
 
+    <section class="card rise" style="animation-delay:.03s">
+      <h2>Speech recognition · 음성 인식</h2>
+      <p class="desc">Chrome’s built-in recogniser is free but weak on short Korean commands. With an <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs API key</a> the extension uses <b>Scribe v2 Realtime</b> and tells it the words on the page you are controlling. The key is stored only on this device; the side panel only ever gets 15-minute single-use tokens. Audio then goes to ElevenLabs instead of Google, billed per second while the mic is on (about $0.39 per hour; the mic pauses after 3 quiet minutes).</p>
+      <div class="row" style="gap:10px;margin-bottom:10px">
+        <span class="pill" id="sttstatus"><span class="dot"></span><span id="sttstatustext">checking</span></span>
+        <label class="small">engine
+          <select id="sttengine" class="boxy" style="margin-left:6px;font:inherit;padding:4px 8px;border-radius:8px">
+            <option value="auto">Auto — ElevenLabs when a key is saved</option>
+            <option value="elevenlabs">ElevenLabs Scribe v2 Realtime</option>
+            <option value="chrome">Chrome Web Speech (free)</option>
+          </select>
+        </label>
+      </div>
+      <form id="sttform" class="row" style="gap:10px">
+        <div class="field" style="flex:1;min-width:220px">
+          <input type="password" id="sttkey" class="boxy" placeholder="Paste your ElevenLabs key (sk_…)" autocomplete="off" spellcheck="false" />
+        </div>
+        <button type="submit" class="btn primary">Save</button>
+        <button type="button" id="sttclear" class="btn quiet">Remove</button>
+      </form>
+      <div class="row" style="margin-top:12px">
+        <button id="stttest" class="btn">Test ElevenLabs</button>
+        <span id="stttestresult" class="result"></span>
+      </div>
+      <p id="sttsavemsg" class="small muted" style="margin-top:8px"></p>
+    </section>
+
     <section class="card rise" style="animation-delay:.05s">
       <h2>Microphone</h2>
       <p class="desc">Chrome can’t show the microphone prompt inside a side panel, so it is asked once on a separate page. The permission belongs to this extension. Status: <b id="micstate">…</b></p>
@@ -53,7 +80,7 @@
     <section class="card rise" style="animation-delay:.1s">
       <h2>How it works</h2>
       <div class="steps">
-        <div class="step"><span class="n">1</span><b>You speak</b><p>Chrome’s speech service turns your voice into text, word by word.</p></div>
+        <div class="step"><span class="n">1</span><b>You speak</b><p>ElevenLabs Scribe (when its key is saved) or Chrome’s speech service turns your voice into text, word by word.</p></div>
         <div class="step"><span class="n">2</span><b>Jev decides</b><p>Your words plus a compact list of the page’s buttons and links are sent to Jev, which answers typed questions — no text generation.</p></div>
         <div class="step"><span class="n">3</span><b>Chrome acts</b><p>Code applies fixed thresholds and clicks, types, scrolls or navigates in your active tab.</p></div>
       </div>
@@ -61,7 +88,7 @@
 
     <section class="card rise" style="animation-delay:.15s">
       <h2>Privacy</h2>
-      <p class="desc" style="margin-bottom:0">Your API key never leaves this device except as a header to TypeSafe. Audio may be processed by Chrome’s Web Speech service (Google). The command transcript, active page URL and title, and a compact list of actionable element labels go to TypeSafe. Password fields and user-entered form values are excluded. Provider retention is governed by their terms. No analytics, no remote code. Actions that look irreversible (buy, delete, send, post) wait for you to say “confirm”.</p>
+      <p class="desc" style="margin-bottom:0">Your API keys never leave this device except as a header to their own service (TypeSafe; ElevenLabs, which returns short-lived single-use tokens for the side panel). Audio goes to ElevenLabs when its key is saved, otherwise to Chrome’s Web Speech service (Google); with ElevenLabs, up to 50 short visible labels of the page you are controlling are sent along as spelling hints. The command transcript, active page URL and title, and a compact list of actionable element labels go to TypeSafe. Password fields and user-entered form values are excluded. Provider retention is governed by their terms. No analytics, no remote code. Actions that look irreversible (buy, delete, send, post) wait for you to say “confirm”.</p>
     </section>
 
     <details class="section" id="advanced">

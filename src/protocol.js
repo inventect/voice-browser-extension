@@ -20,6 +20,11 @@ export const MSG = {
   SET_API_KEY: "set-api-key", // { apiKey } (options page)
   TEST_CONNECTION: "test-connection", // → { ok, latencyMs, model } one cheap Noul call
   PING: "ping", // keep-alive from the side panel
+  // speech-to-text engine (local addition: ElevenLabs Scribe v2 Realtime)
+  STT_STATUS: "stt-status", // → { hasKey, masked, engine, resolved }
+  SET_STT: "set-stt", // { apiKey?, engine? } (options page) → STT_STATUS
+  STT_TOKEN: "stt-token", // → { ok, token } single-use realtime token (side panel), key stays in the worker
+  TEST_STT: "test-stt", // { apiKey? } → { ok, latencyMs } mints (and discards) one token
 
   // service worker → side panel (port broadcast)
   HELLO: "hello",

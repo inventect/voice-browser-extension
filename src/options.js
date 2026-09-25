@@ -58,6 +58,38 @@ import { MSG } from "./protocol.js";
     out.textContent = r?.ok ? `✓ ${r.model} answered in ${r.latencyMs} ms${typed ? " — key not saved yet, click Save" : ""}` : `✗ ${r?.error || "failed"}`;
   };
 
+  // ---- speech recognition engine (local addition: ElevenLabs Scribe v2 Realtime)
+  function renderStt(s) {
+    if (!s || s.error) return;
+    const el = $("sttstatus");
+    el.className = `pill ${s.resolved === "elevenlabs" ? "ok" : ""}`;
+    $("sttstatustext").textContent = `${s.resolved === "elevenlabs" ? "using ElevenLabs" : "using Chrome"}${s.hasKey ? ` · key ${s.masked}` : " · no ElevenLabs key"}`;
+    $("sttengine").value = s.engine;
+  }
+  ask({ type: MSG.STT_STATUS }).then(renderStt).catch(() => {});
+  $("sttengine").onchange = async () => renderStt(await ask({ type: MSG.SET_STT, engine: $("sttengine").value }));
+  $("sttform").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const apiKey = $("sttkey").value.trim();
+    if (!apiKey) return;
+    renderStt(await ask({ type: MSG.SET_STT, apiKey }));
+    $("sttkey").value = "";
+    $("sttsavemsg").textContent = "Saved. Click “Test ElevenLabs” to verify it works.";
+  });
+  $("sttclear").onclick = async () => {
+    renderStt(await ask({ type: MSG.SET_STT, apiKey: "" }));
+    $("sttsavemsg").textContent = "ElevenLabs key removed — the mic uses Chrome’s recogniser.";
+  };
+  $("stttest").onclick = async () => {
+    const out = $("stttestresult");
+    out.className = "result";
+    out.textContent = "testing…";
+    const typed = $("sttkey").value.trim();
+    const r = await ask({ type: MSG.TEST_STT, ...(typed ? { apiKey: typed } : {}) });
+    out.className = `result ${r?.ok ? "ok" : "err"}`;
+    out.textContent = r?.ok ? `✓ ElevenLabs issued a realtime token in ${r.latencyMs} ms${typed ? " — key not saved yet, click Save" : ""}` : `✗ ${r?.error || "failed"}`;
+  };
+
   // ---- microphone
   async function micState() {
     try {

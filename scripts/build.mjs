@@ -43,7 +43,7 @@ const jobs = [
 
 function copyStatic() {
   fs.copyFileSync(path.join(root, "manifest.json"), path.join(dist, "manifest.json"));
-  for (const f of ["sidepanel.html", "options.html", "permission.html", "ui.css", "sidepanel.css", "pages.css"]) {
+  for (const f of ["sidepanel.html", "options.html", "permission.html", "ui.css", "sidepanel.css", "pages.css", "scribe-worklet.js"]) {
     fs.copyFileSync(path.join(src, f), path.join(dist, f));
   }
   // Icons: rasterised from assets/icon.svg by `npm run icons` (Playwright) into assets/icons/;

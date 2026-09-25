@@ -7,6 +7,8 @@
  * Talks to the service worker over a long-lived port using protocol.js message types.
  */
 import { MSG, PORT_NAME } from "./protocol.js";
+import { ScribeMic } from "./scribe-mic.js";
+import { buildKeyterms } from "./scribe-util.js";
 
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -62,6 +64,7 @@ import { MSG, PORT_NAME } from "./protocol.js";
       case MSG.HELLO:
         ui = payload;
         renderAll();
+        pushKeyterms();
         break;
       case MSG.TRANSCRIPT:
         onTranscript(payload);
@@ -74,11 +77,13 @@ import { MSG, PORT_NAME } from "./protocol.js";
         onAction(payload);
         renderStats();
         renderPage();
+        pushKeyterms();
         break;
       case MSG.SNAPSHOT:
         if (ui) ui.snapshot = payload;
         renderPage();
         renderAlerts();
+        pushKeyterms();
         break;
       case MSG.LOG:
         appendLog(payload);
@@ -266,6 +271,17 @@ import { MSG, PORT_NAME } from "./protocol.js";
         ]),
       );
     }
+    if (sttProblem) {
+      const ko = langSel.value === "ko-KR";
+      out.push(
+        alert(
+          "warn",
+          ko ? "ElevenLabs 음성 인식을 쓸 수 없어요" : "ElevenLabs speech recognition failed",
+          `${sttProblem.message}${ko ? " — 지금은 Chrome 기본 인식기로 들어요. 설정에서 ElevenLabs 키를 확인하세요." : " — using Chrome’s recogniser instead. Check the ElevenLabs key in Settings."}`,
+          [{ id: "openopt", label: "Open settings", primary: true }],
+        ),
+      );
+    }
     const sn = ui?.snapshot;
     if (sn?.popup) {
       const kind = sn.popup.kind === "banner" ? "A banner" : "A pop-up";
@@ -431,8 +447,33 @@ import { MSG, PORT_NAME } from "./protocol.js";
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let rec = null;
   let micOn = false;
+  let starting = false;
   let utteranceBase = 0;
   let permPoll = null;
+  // Local addition: which recogniser is listening ("elevenlabs" | "chrome"), the ElevenLabs
+  // session, and an idle guard (ElevenLabs bills the audio time streamed while the mic is on).
+  let engine = null;
+  let scribe = null;
+  let sttProblem = null;
+  let lastHeardAt = 0;
+  let idleTimer = null;
+  const IDLE_STOP_MS = 3 * 60 * 1000;
+  // Recognition language (local addition): remembered per browser; switching restarts a running mic.
+  const langSel = $("lang");
+  langSel.value = localStorage.getItem("vb-lang") || "ko-KR";
+  langSel.onchange = () => {
+    localStorage.setItem("vb-lang", langSel.value);
+    if (micOn) {
+      if (rec) rec.onend = null; // the old recognizer must not auto-restart after stop()
+      stopMic();
+      startMic();
+    }
+  };
+  // Words on the controlled page → ElevenLabs keyterms (applied at the next quiet moment).
+  const currentKeyterms = () => buildKeyterms(ui?.snapshot || null, langSel.value);
+  function pushKeyterms() {
+    if (scribe) scribe.updateKeyterms(currentKeyterms());
+  }
 
   async function micPermissionState() {
     try {
@@ -483,18 +524,107 @@ import { MSG, PORT_NAME } from "./protocol.js";
   }
 
   async function startMic() {
+    if (micOn || starting) return;
+    starting = true;
+    try {
+      if (!(await ensureMicPermission())) return;
+      micDenied = false;
+      renderAlerts();
+      let stt = null;
+      try {
+        stt = await chrome.runtime.sendMessage({ type: MSG.STT_STATUS });
+      } catch {}
+      if (stt?.resolved === "elevenlabs" && (await startScribe())) return;
+      startWebSpeech();
+    } finally {
+      starting = false;
+    }
+  }
+
+  function listeningHint() {
+    const ex = langSel.value === "ko-KR" ? "예: “위키피디아로 가 줘”, “유튜브 열어 줘”" : "say something like “go to wikipedia”";
+    return `${ex} · ${engine === "elevenlabs" ? "ElevenLabs" : "Chrome"}`;
+  }
+  function setMicUi(on) {
+    const b = $("micbtn");
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.setAttribute("aria-label", on ? "Stop listening" : "Start listening");
+    const el = $("sttengine");
+    if (el) el.textContent = on ? (engine === "elevenlabs" ? "ElevenLabs Scribe v2 Realtime" : "Chrome Web Speech") : "–";
+  }
+
+  /** ElevenLabs path (local addition). Resolves false when it could not start → caller falls back. */
+  async function startScribe() {
+    const s = new ScribeMic({
+      getToken: () => chrome.runtime.sendMessage({ type: MSG.STT_TOKEN }),
+      workletUrl: chrome.runtime.getURL("scribe-worklet.js"),
+      onTranscript: (t) => {
+        if (s !== scribe) return;
+        lastHeardAt = Date.now();
+        speechLog(`${t.final ? "final  " : "interim"} id=${t.utteranceId} “${t.text}” (elevenlabs)`);
+        send({ type: MSG.TRANSCRIPT, text: t.text, final: t.final, utteranceId: t.utteranceId });
+      },
+      onState: (st) =>
+        speechLog(
+          `elevenlabs ${st.state}${st.reason ? ` (${st.reason})` : ""}${st.connectMs != null ? ` in ${st.connectMs} ms` : ""}${st.keyterms != null ? ` · ${st.keyterms} page words` : ""}${st.audioSeconds != null ? ` · ${st.audioSeconds}s streamed` : ""}`,
+        ),
+      onError: (e) => {
+        speechLog(`elevenlabs error: ${e.code} — ${e.message}`);
+        if (!e.fatal) {
+          if (s === scribe) $("substatus").textContent = `ElevenLabs: ${e.message}`;
+          return;
+        }
+        sttProblem = e;
+        renderAlerts();
+        if (s === scribe && micOn) {
+          // keep listening with Chrome's recogniser instead
+          scribe = null;
+          micOn = false;
+          clearInterval(idleTimer);
+          startWebSpeech();
+        }
+      },
+      onLog: (m) => speechLog(m),
+    });
+    scribe = s;
+    try {
+      await s.start({ lang: langSel.value, keyterms: currentKeyterms() });
+    } catch (err) {
+      speechLog(`elevenlabs start failed: ${err?.name || err} ${err?.message || ""}`);
+      if (scribe === s) scribe = null;
+      return false;
+    }
+    if (!s.active || scribe !== s) {
+      if (scribe === s) scribe = null;
+      return false;
+    }
+    sttProblem = null;
+    renderAlerts();
+    engine = "elevenlabs";
+    micOn = true;
+    lastHeardAt = Date.now();
+    clearInterval(idleTimer);
+    idleTimer = setInterval(() => {
+      if (engine === "elevenlabs" && micOn && Date.now() - lastHeardAt > IDLE_STOP_MS) {
+        stopMic(langSel.value === "ko-KR" ? "3분 동안 말이 없어 마이크를 껐어요 (ElevenLabs 사용 시간 절약)" : "no speech for 3 minutes — mic paused to save ElevenLabs time");
+      }
+    }, 10000);
+    setMicUi(true);
+    setStatus("Listening…", listeningHint());
+    return true;
+  }
+
+  /** Chrome Web Speech path (upstream behaviour). */
+  function startWebSpeech() {
     if (!SR) {
       setStatus("Speech recognition isn’t available here", "type commands below instead");
       return;
     }
-    if (micOn) return;
-    if (!(await ensureMicPermission())) return;
-    micDenied = false;
-    renderAlerts();
     rec = new SR();
     rec.continuous = true;
     rec.interimResults = true;
-    rec.lang = "en-US";
+    rec.lang = langSel.value;
     rec.maxAlternatives = 1;
     rec.onresult = (ev) => {
       for (let i = ev.resultIndex; i < ev.results.length; i++) {
@@ -517,7 +647,7 @@ import { MSG, PORT_NAME } from "./protocol.js";
     };
     rec.onend = () => {
       speechLog("end" + (micOn ? " → restart" : ""));
-      if (micOn) {
+      if (micOn && engine === "chrome") {
         utteranceBase += 1;
         try {
           rec.start();
@@ -530,23 +660,25 @@ import { MSG, PORT_NAME } from "./protocol.js";
       setStatus("Couldn’t start the microphone", err?.message || String(err));
       return;
     }
+    engine = "chrome";
     micOn = true;
-    const b = $("micbtn");
-    b.classList.add("on");
-    b.setAttribute("aria-pressed", "true");
-    b.setAttribute("aria-label", "Stop listening");
-    setStatus("Listening…", "say something like “go to wikipedia”");
+    setMicUi(true);
+    setStatus("Listening…", listeningHint());
   }
-  function stopMic() {
+  function stopMic(reason) {
     micOn = false;
+    clearInterval(idleTimer);
+    if (scribe) {
+      const s = scribe;
+      scribe = null;
+      s.stop();
+    }
     try {
       rec && rec.stop();
     } catch {}
-    const b = $("micbtn");
-    b.classList.remove("on");
-    b.setAttribute("aria-pressed", "false");
-    b.setAttribute("aria-label", "Start listening");
-    setStatus("Paused", "tap the mic to listen again, or type below");
+    engine = null;
+    setMicUi(false);
+    setStatus("Paused", typeof reason === "string" ? reason : "tap the mic to listen again, or type below");
   }
   $("micbtn").onclick = () => (micOn ? stopMic() : startMic());
 
