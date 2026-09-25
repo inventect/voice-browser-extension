@@ -30,6 +30,32 @@ const TRAILING_DEST_RE =
 const LEADING_SITE_RE =
   /^(?:on\s+|in\s+)?(?:google|duckduckgo|wikipedia|youtube|github|amazon|reddit|twitter|x|hacker news|the web)\s+(?:for\s+)?/i;
 
+// --- Korean (local addition, not upstream) ---------------------------------------------------------
+// Korean is verb-final, so the payload comes BEFORE the verb: "앨런 튜링 검색해 줘", "검색창에 안녕하세요
+// 입력해 줘", "유튜브에서 로파이 음악 찾아 줘", "안녕이라고 써 줘". Same contract as the English path: code
+// over-generates candidate spans (stripped and unstripped), Jev picks one, the pick is copied verbatim.
+const HANGUL_RE = /[\uac00-\ud7a3]/;
+// Greedy prefix => split at the LAST verb ("검색창에 X 입력해 줘" splits at 입력, not inside 검색창).
+const KO_VERB_RE = /^(.*\S)\s*(?:검색|찾아|찾기|입력|타이핑|쳐|써|적어)[\uac00-\ud7a3\s]*$/;
+// Between payload and verb: 을/를, (이)라고, 좀, 에 대해(서)/관해(서), a trailing "…에서" site or "…창에" field.
+const KO_TRAILING_RE = /\s*(?:(?:이)?라고|에\s*(?:대해서?|관해서?)|을|를|좀)$|\s+\S+에서$|\s+\S*(?:창|칸|란|필드|박스)에$/;
+// Leading field / site phrases: "검색창에 …", "이메일 칸에 …", "유튜브에서 …".
+const KO_LEADING_RE = /^(?:\S+\s+)?\S*(?:창|칸|란|필드|박스)에\s+|^\S+에서\s+/;
+
+function koreanPayloads(t) {
+  const s = t.replace(/[.,!?~]+$/g, "").trim();
+  if (!HANGUL_RE.test(s)) return [];
+  const m = KO_VERB_RE.exec(s);
+  if (!m) return [];
+  const raw = m[1].trim();
+  let core = raw;
+  for (let prev = null; prev !== core; ) {
+    prev = core;
+    core = core.replace(KO_TRAILING_RE, "").trim();
+  }
+  return [core.replace(KO_LEADING_RE, "").trim(), core, raw.replace(KO_LEADING_RE, "").trim(), raw];
+}
+
 export function cleanTranscript(text) {
   return String(text || "")
     .replace(/\s+/g, " ")
@@ -59,6 +85,9 @@ export function extractTextCandidates(transcript) {
 
   // 1. quoted spans
   for (const m of t.matchAll(/["“”']([^"“”']{1,120})["“”']/g)) pushUnique(out, m[1]);
+
+  // 1b. Korean: payload before the verb (local addition; no-op without Hangul)
+  for (const k of koreanPayloads(t)) pushUnique(out, k);
 
   // 2. text after a payload verb (earliest verb in the sentence first), destination phrase stripped
   const verbMatches = TEXT_VERBS.map((re) => re.exec(t))
@@ -90,6 +119,8 @@ export function extractTextCandidates(transcript) {
 export function normalizeSpokenUrl(text) {
   return String(text || "")
     .toLowerCase()
+    .replace(/\s*닷\s*컴/g, ".com") // Korean "github 닷컴" (local addition)
+    .replace(/\s*닷\s*/g, ".") // Korean "example 닷 org"
     .replace(/\s+dot\s+/g, ".")
     .replace(/\s*\.\s*/g, ".")
     .replace(/\s+slash\s+/g, "/")
@@ -135,9 +166,25 @@ const PICK_STOPWORDS = new Set([
   "the", "number", "option", "pick", "choose", "select", "click", "take", "that", "please", "link", "item", "result", "go", "with", "on", "yes", "this", "um", "uh",
 ]);
 
+// Korean picks (local addition): "2번", "두 번째", "첫 번째 거 클릭해 줘", "둘". A bare "네" means "yes",
+// so 네/세/한 only count with a counter (번/번째/째); 하나/둘/셋/넷/다섯 also count alone.
+const KO_NUM = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 한: 1, 하나: 1, 첫: 1, 두: 2, 둘: 2, 세: 3, 셋: 3, 네: 4, 넷: 4, 다섯: 5 };
+const KO_PICK_RE =
+  /^(?:그\s*)?(\d|하나|한|첫|두|둘|세|셋|네|넷|다섯)\s*(번째|번|째)?\s*(?:거|것|꺼|걸로|거요|요|이요|으로|로|링크|결과|항목)?(?:\s*(?:클릭|눌러|선택|열어)[\uac00-\ud7a3\s]*)?$/;
+const KO_BARE_OK = new Set(["하나", "둘", "셋", "넷", "다섯"]);
+
+function koreanPick(t, max) {
+  const m = KO_PICK_RE.exec(t);
+  if (!m) return null;
+  if (!m[2] && !KO_BARE_OK.has(m[1])) return null;
+  const n = KO_NUM[m[1]];
+  return n && n <= max ? n : null;
+}
+
 export function parseCandidatePick(transcript, max = 5) {
   const t = cleanTranscript(transcript).toLowerCase().replace(/[.,!?]/g, "");
   if (!t) return null;
+  if (HANGUL_RE.test(t)) return koreanPick(t, max);
   const meaningful = t.split(" ").filter((w) => !PICK_STOPWORDS.has(w));
   if (meaningful.length === 0 || meaningful.length > 2) return null;
   for (const w of meaningful) {

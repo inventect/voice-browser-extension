@@ -72,18 +72,19 @@ export const DUPLICATE_TRANSCRIPT_MS = 2500;
 // An identical closed-set action (back, forward, reload, scroll, tab ops) decided again within this
 // window of the previous execution is ignored unless the user says "again" / "once more".
 export const REPEAT_ACTION_MS = 1500;
-export const REPEAT_WORDS_RE = /\b(again|once more|one more|another)\b/i;
+export const REPEAT_WORDS_RE = /\b(again|once more|one more|another)\b|다시|한\s*번\s*더/i; // Korean: local addition
 export const CLOSED_SET_ACTIONS = new Set(["go_back", "go_forward", "reload", "scroll_down", "scroll_up", "open_new_tab", "close_tab", "switch_tab"]);
 
 // Pop-up dismissal: when the user says "close this" / "accept" / "not now" and a pop-up is open,
 // code ranks the pop-up's controls with these patterns (Jev's `target` pick wins when confident).
 export const DISMISS_PATTERNS = {
-  close: /\b(close|dismiss|skip|hide)\b|^\s*[×✕✖xX]\s*$/i,
-  accept: /\b(accept|agree|allow|got it|ok(ay)?|i understand|understood|continue|yes|sure|fine)\b/i,
-  reject: /\b(reject|decline|deny|refuse|no thanks|not now|maybe later|later|no,? thank|only (necessary|essential)|necessary only)\b/i,
+  close: /\b(close|dismiss|skip|hide)\b|^\s*[×✕✖xX]\s*$|닫기|닫음|창\s*닫/i,
+  accept: /\b(accept|agree|allow|got it|ok(ay)?|i understand|understood|continue|yes|sure|fine)\b|동의|수락|허용|확인|계속/i,
+  reject: /\b(reject|decline|deny|refuse|no thanks|not now|maybe later|later|no,? thank|only (necessary|essential)|necessary only)\b|거부|거절|나중에|다음에|괜찮아요|보지\s*않기|그만\s*보기|필수만/i,
 };
-export const WANTS_ACCEPT_RE = /\b(accept|agree|allow|yes|ok(ay)?|got it|sure)\b/i;
-export const WANTS_REJECT_RE = /\b(reject|decline|deny|refuse|no thanks|not now|later|no)\b/i;
+// Korean alternatives are outside \b(...)\b on purpose: JS \b only knows [A-Za-z0-9_], never Hangul.
+export const WANTS_ACCEPT_RE = /\b(accept|agree|allow|yes|ok(ay)?|got it|sure)\b|동의|수락|허용/i;
+export const WANTS_REJECT_RE = /\b(reject|decline|deny|refuse|no thanks|not now|later|no)\b|거부|거절|나중에|다음에|괜찮아|안\s*할래|필요\s*없|보지\s*않/i;
 
 // ---------------------------------------------------------------------------
 // Sites (code owns URLs; Jev only picks the name)
@@ -99,6 +100,7 @@ export const SITE_HOME = {
   twitter_x: "https://x.com/",
   hacker_news: "https://news.ycombinator.com/",
   example_com: "https://example.com/",
+  naver: "https://www.naver.com/", // local addition
 };
 
 // Search URL templates; `%s` is replaced with the URL-encoded query.
@@ -113,6 +115,7 @@ export const SITE_SEARCH = {
   reddit: "https://www.reddit.com/search/?q=%s",
   twitter_x: "https://x.com/search?q=%s",
   hacker_news: "https://hn.algolia.com/?q=%s",
+  naver: "https://search.naver.com/search.naver?query=%s", // local addition
 };
 
 export const DEFAULT_SEARCH_ENGINE = "duckduckgo";
@@ -226,6 +229,7 @@ export const SITE_CRITERIA = {
   twitter_x: "Twitter / X",
   hacker_news: "Hacker News (news.ycombinator.com, hn)",
   example_com: "example.com / example dot com",
+  naver: "Naver (네이버), the Korean portal and search engine",
   other_named_site: "Some other website named explicitly in `transcript` (a domain or brand not listed above)",
   none: "No website or search engine is mentioned in `transcript`",
 };

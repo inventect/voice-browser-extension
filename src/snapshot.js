@@ -319,6 +319,7 @@ export function detectSite(url) {
   if (host === "x.com" || host.endsWith("twitter.com")) return "twitter_x";
   if (host.endsWith("news.ycombinator.com")) return "hacker_news";
   if (host === "example.com") return "example_com";
+  if (host === "naver.com" || host.endsWith(".naver.com")) return "naver"; // local addition
   if (!host || url.startsWith("about:")) return "blank";
   return "generic";
 }
