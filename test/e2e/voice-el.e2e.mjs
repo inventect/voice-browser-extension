@@ -137,29 +137,42 @@ async function main() {
     await app.controller.refreshSnapshot();
   });
 
-  // press the mic (the button handler is the real one); record when the fake capture device
-  // starts (= t0 of the WAV) so actions can be timed against the end of each spoken command
-  await panel.evaluate(() => {
-    const orig = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-    navigator.mediaDevices.getUserMedia = async (c) => {
-      const s = await orig(c);
-      window.__gumAt = Date.now();
-      return s;
-    };
-  });
+  // press the mic (the button handler is the real one). The recogniser runs in the offscreen
+  // document; the worker reports when its capture device started (= t0 of the WAV) so actions can
+  // be timed against the end of each spoken command.
   const tMic = Date.now();
   await panel.evaluate(() => document.getElementById("micbtn").click());
-  const engine = await waitFor(() => panel.evaluate(() => document.getElementById("sttengine")?.textContent || "").then((t) => (t && t !== "–" ? t : null)), { timeout: 10000 });
+  const engine = await waitFor(() => panel.evaluate(() => document.getElementById("sttengine")?.textContent || "").then((t) => (t && t !== "–" && !/\(off\)$/.test(t) ? t : null)), { timeout: 10000 });
+  // Local addition: listening must survive closing the side panel — close it right away and
+  // reopen it only after the audio is over.
+  const CLOSE_PANEL = !args.includes("--keep-panel");
+  if (CLOSE_PANEL) {
+    await panel.close();
+    console.log("side panel closed while listening (reopened after the audio)");
+  }
   console.log(`\nvoice e2e · ${DEGRADE ? "DEGRADED" : "clean"} synthesized Korean audio (${audioS.toFixed(1)} s) · engine: ${engine || "?"} · mic pressed ${((Date.now() - tMic) / 1000).toFixed(1)} s in\n`);
 
   // follow along until the audio is over + slack
   const deadline = Date.now() + (audioS + 8) * 1000;
   while (Date.now() < deadline) await sleep(500);
-  const gumAt = await panel.evaluate(() => window.__gumAt || null);
+  const gumAt = await sw.evaluate(() => globalThis.__vbApp.micState().audioAt || null);
+  const micWasOn = await sw.evaluate(() => globalThis.__vbApp.micState().on);
+  let panelNow = panel;
+  if (CLOSE_PANEL) {
+    panelNow = await context.newPage();
+    await panelNow.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+    await waitFor(() => panelNow.evaluate(() => document.getElementById("conntext")?.textContent === "ready"), { timeout: 8000 });
+    await sleep(300);
+  }
+  const panelMicOn = await panelNow.evaluate(() => document.getElementById("micbtn").getAttribute("aria-pressed") === "true");
+  console.log(`after the audio: mic ${micWasOn ? "still on" : "OFF"} in the worker · reopened panel shows it ${panelMicOn ? "on" : "off"}`);
   // executed actions only (the controller logs "✓ …" / "✗ …" once per action)
   const acted = await sw.evaluate(() => globalThis.__vbApp.controller.uiState().log.filter((l) => /^[✓✗] /.test(l.msg)).map((l) => ({ t: l.t, msg: l.msg })));
-  const speech = await panel.evaluate(() => [...document.querySelectorAll("#speechlog div")].map((d) => d.textContent));
-  await panel.evaluate(() => document.getElementById("micbtn").click()); // stop mic
+  const speech = await panelNow.evaluate(() => [...document.querySelectorAll("#speechlog div")].map((d) => d.textContent));
+  await panelNow.evaluate(() => document.getElementById("micbtn").click()); // stop mic
+  await sleep(400);
+  const offscreenLeft = await sw.evaluate(async () => (await chrome.runtime.getContexts({ contextTypes: ["OFFSCREEN_DOCUMENT"] })).length);
+  console.log(`mic stopped · offscreen documents left: ${offscreenLeft}`);
 
   // Score: the i-th spoken command should produce an action that satisfies SCRIPT[i].expect —
   // checked through the URL / scroll recorded in the action log line.

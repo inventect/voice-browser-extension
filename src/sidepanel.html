@@ -1,39 +1,39 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="utf-8" />
-<title>Voice Browser</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>Voice Browser</title>
 <link rel="stylesheet" href="ui.css" />
 <link rel="stylesheet" href="sidepanel.css" />
 </head>
 <body>
+<!-- Local redesign (apple.com-style): frosted title bar, one hero control, quiet everything else. -->
 <header class="top">
-  <a class="brand" href="#" id="brand" title="Voice Browser">
-    <svg class="mark" viewBox="0 0 128 128" aria-hidden="true"><circle cx="64" cy="64" r="60" fill="var(--accent)"/><rect x="52" y="30" width="24" height="44" rx="12" fill="var(--accent-ink)"/><path d="M40 66c0 13.3 10.7 24 24 24s24-10.7 24-24" fill="none" stroke="var(--accent-ink)" stroke-width="8" stroke-linecap="round"/><path d="M64 90v11M50 101h28" fill="none" stroke="var(--accent-ink)" stroke-width="8" stroke-linecap="round"/></svg>
-    <span class="wordmark">Voice Browser</span>
-  </a>
+  <span class="title">Voice Browser</span>
   <div class="top-right">
-    <select id="lang" class="pill" title="Speech recognition language / 음성 인식 언어" aria-label="Speech recognition language" style="font: inherit; color: inherit; cursor: pointer">
-      <option value="ko-KR">한국어</option>
-      <option value="en-US">English</option>
-    </select>
-    <span class="pill" id="conn" title="connection to the extension"><span class="dot"></span><span id="conntext">connecting</span></span>
-    <button class="iconbtn" id="settingsbtn" title="Settings" aria-label="Settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    <span class="conn" id="conn" title="connection to the extension"><span class="dot"></span><span id="conntext">connecting</span></span>
+    <div class="seg" id="lang" role="group" aria-label="Speech recognition language · 음성 인식 언어">
+      <button type="button" data-lang="ko-KR" aria-pressed="true" title="한국어로 듣기">한국어</button>
+      <button type="button" data-lang="en-US" aria-pressed="false" title="Listen in English">EN</button>
+    </div>
+    <button class="iconbtn" id="settingsbtn" type="button" title="Settings · 설정" aria-label="Settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round" fill-rule="evenodd" d="M9.97 4.16L10.28 1.74L13.72 1.74L14.03 4.16L16.11 5.02L18.04 3.53L20.47 5.96L18.98 7.89L19.84 9.97L22.26 10.28L22.26 13.72L19.84 14.03L18.98 16.11L20.47 18.04L18.04 20.47L16.11 18.98L14.03 19.84L13.72 22.26L10.28 22.26L9.97 19.84L7.89 18.98L5.96 20.47L3.53 18.04L5.02 16.11L4.16 14.03L1.74 13.72L1.74 10.28L4.16 9.97L5.02 7.89L3.53 5.96L5.96 3.53L7.89 5.02ZM15.20 12.00a3.2 3.2 0 1 0 -6.40 0a3.2 3.2 0 1 0 6.40 0Z"/></svg>
     </button>
   </div>
 </header>
 
 <main>
-  <!-- hero: the mic -->
-  <section class="hero rise">
-    <button id="micbtn" class="mic" aria-pressed="false" aria-label="Start listening">
-      <span class="ring r1"></span><span class="ring r2"></span>
-      <svg class="micicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3M9 21h6"/></svg>
+  <!-- hero: the microphone -->
+  <section class="hero">
+    <button id="micbtn" class="mic" type="button" aria-pressed="false" aria-label="Start listening">
+      <!-- SF Symbols-style mic.fill -->
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.25" y="2" width="7.5" height="12.5" rx="3.75" fill="currentColor"/><path d="M5.25 11.25a6.75 6.75 0 0 0 13.5 0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M12 18v3.25M8.75 21.25h6.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
     </button>
-    <h1 id="status" class="status">Tap the mic and say something</h1>
-    <p id="substatus" class="substatus">or type a command below</p>
+    <h1 id="status" class="status">마이크를 누르고 말해 보세요</h1>
+    <p id="substatus" class="substatus">또는 아래에 입력하세요</p>
+    <p id="caption" class="caption"></p>
   </section>
 
   <!-- alerts: key missing, mic blocked, pop-up, restricted page -->
@@ -42,33 +42,26 @@
   <!-- conversation -->
   <section id="convo" class="convo" aria-live="polite"></section>
 
-  <!-- first-run guidance -->
-  <section id="empty" class="empty rise">
-    <p class="eyebrow">Try saying</p>
-    <div class="chips" id="chips">
-      <button class="chip" data-say="go to wikipedia">“go to wikipedia”</button>
-      <button class="chip" data-say="search for alan turing">“search for alan turing”</button>
-      <button class="chip" data-say="click the first result">“click the first result”</button>
-      <button class="chip" data-say="scroll down a bit">“scroll down a bit”</button>
-      <button class="chip" data-say="go back">“go back”</button>
-      <button class="chip" data-say="open a new tab">“open a new tab”</button>
-    </div>
-    <p class="small muted hint">Two commands in one breath work too — “go to example dot com and click the more information link”. Pop-up in the way? Say “close this” or “accept cookies”.</p>
+  <!-- first run -->
+  <section id="empty" class="empty">
+    <p class="eyebrow" id="emptytitle">이렇게 말해 보세요</p>
+    <div class="chips" id="chips"></div>
+    <p class="hint" id="hint"></p>
   </section>
 
   <!-- composer -->
-  <form id="cmdform" class="composer">
+  <form id="cmdform" class="composer" autocomplete="off">
     <div class="field">
-      <input type="text" id="cmd" placeholder="Type a command…" autocomplete="off" spellcheck="false" aria-label="Type a command" />
-      <button type="submit" class="iconbtn send inbtn" aria-label="Send">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      <input type="text" id="cmd" placeholder="명령 입력" autocomplete="off" spellcheck="false" aria-label="Type a command" />
+      <button type="submit" class="send inbtn" aria-label="Send">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18.5V5.5M6.5 11 12 5.5l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
   </form>
 
   <!-- developer details -->
   <details class="section details" id="details">
-    <summary>Details <span class="pill" id="detailpill"><b id="lat">–</b> ms · $<b id="cost">0.0000</b></span></summary>
+    <summary><span id="detailslabel">자세히</span> <span class="pill" id="detailpill"><b id="lat">–</b> ms · $<b id="cost">0.0000</b></span></summary>
     <div class="stack">
       <div class="dcard">
         <p class="eyebrow">This page</p>
@@ -80,20 +73,20 @@
           <dt>pop-up</dt><dd id="popup">none</dd>
           <dt>tabs</dt><dd id="tabs">–</dd>
         </dl>
-        <div class="row" style="margin-top:8px">
-          <button class="btn sm" id="resnap">Re-scan page</button>
-          <button class="btn sm" id="undo">Undo / back</button>
+        <div class="row" style="margin-top:10px">
+          <button class="btn sm" id="resnap" type="button">Re-scan page</button>
+          <button class="btn sm" id="undo" type="button">Undo / back</button>
         </div>
       </div>
       <div class="dcard">
-        <p class="eyebrow">Last decision <span id="decmeta" class="muted" style="text-transform:none;letter-spacing:0;font-weight:500"></span></p>
+        <p class="eyebrow">Last decision <span id="decmeta" class="muted" style="font-weight:400"></span></p>
         <div id="verdict" class="verdict">waiting for speech…</div>
         <table id="reasons"><thead><tr><th>gate</th><th>value</th><th>thr</th><th>note</th></tr></thead><tbody></tbody></table>
-        <p class="eyebrow" style="margin-top:12px">intent <span id="intentconf" class="muted" style="text-transform:none;letter-spacing:0;font-weight:500"></span></p>
+        <p class="eyebrow" style="margin-top:12px">intent <span id="intentconf" class="muted" style="font-weight:400"></span></p>
         <div id="intent"></div>
         <p class="eyebrow" style="margin-top:12px">yes / no signals</p>
         <div id="nouls"></div>
-        <p class="eyebrow" style="margin-top:12px">target element <span id="targetconf" class="muted" style="text-transform:none;letter-spacing:0;font-weight:500"></span></p>
+        <p class="eyebrow" style="margin-top:12px">target element <span id="targetconf" class="muted" style="font-weight:400"></span></p>
         <div id="target"></div>
         <p class="eyebrow" style="margin-top:12px">site</p>
         <div id="site"></div>
@@ -103,7 +96,7 @@
         <div id="spans"></div>
       </div>
       <div class="dcard">
-        <p class="eyebrow">Elements sent to Jev <span id="elcount" class="muted"></span></p>
+        <p class="eyebrow">Elements sent to Jev <span id="elcount" class="muted" style="font-weight:400"></span></p>
         <div class="scroll" id="elements"></div>
       </div>
       <div class="dcard">

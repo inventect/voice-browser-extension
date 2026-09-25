@@ -16,7 +16,7 @@ import { servePages } from "../test/e2e/serve-pages.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
 const DIST = path.join(root, "dist");
-const OUT = path.join(root, "reports", "ui");
+const OUT = process.env.VB_SHOTS_DIR || path.join(root, "reports", "ui");
 fs.mkdirSync(OUT, { recursive: true });
 const KEY = process.env.TYPESAFE_API_KEY || process.env.JEV_API_KEY || "";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -27,6 +27,7 @@ const ctx = await chromium.launchPersistentContext(profile, {
   headless: true,
   channel: "chromium",
   viewport: { width: 1280, height: 900 },
+  deviceScaleFactor: 2,
   args: [`--disable-extensions-except=${DIST}`, `--load-extension=${DIST}`, "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
 });
 let [sw] = ctx.serviceWorkers();
@@ -38,7 +39,11 @@ const shot = async (page, name, opts = {}) => {
   await page.screenshot({ path: path.join(OUT, `${name}.png`), fullPage: opts.fullPage ?? false });
   console.log(`reports/ui/${name}.png`);
 };
-const setScheme = (page, scheme) => page.emulateMedia({ colorScheme: scheme });
+// wait out the 0.2–0.35 s colour transitions, or the capture shows half-switched colours
+const setScheme = async (page, scheme) => {
+  await page.emulateMedia({ colorScheme: scheme });
+  await sleep(500);
+};
 
 // --- side panel: missing key (before a key is set), light
 const panel = ctx.pages()[0];
@@ -55,6 +60,13 @@ await setScheme(panel, "light");
 await shot(panel, "sidepanel-empty-light");
 await setScheme(panel, "dark");
 await shot(panel, "sidepanel-empty-dark");
+// English copy (segmented control), then back to Korean
+await panel.click('#lang button[data-lang="en-US"]');
+await sleep(300);
+await setScheme(panel, "light");
+await shot(panel, "sidepanel-empty-light-en");
+await panel.click('#lang button[data-lang="ko-KR"]');
+await sleep(300);
 
 // --- a controlled tab with a real page + a pop-up, then drive a few commands through the panel UI
 const page = await ctx.newPage();
@@ -67,10 +79,10 @@ if (KEY) {
     await panel.press("#cmd", "Enter");
     await sleep(wait);
   };
-  await run("close this");
-  await run("accept cookies");
-  await run("go to wikipedia", 4500);
-  await run("click on a link", 3500); // likely ambiguous → numbered badges + "which one?" card
+  await run("팝업 닫아 줘");
+  await run("쿠키 동의해 줘");
+  await run("위키피디아로 가 줘", 4500);
+  await run("링크 눌러 줘", 3500); // likely ambiguous → numbered badges + "which one?" card
   await setScheme(panel, "light");
   await shot(panel, "sidepanel-conversation-light");
   await setScheme(panel, "dark");
@@ -95,7 +107,7 @@ if (KEY) {
   await shot(panel, "sidepanel-details-light", { fullPage: true });
   // listening state (mic on) — Web Speech starts in the fake-device Chromium, no network recognizer
   await panel.click("#micbtn");
-  await sleep(600);
+  await sleep(1500);
   await panel.evaluate(() => (document.getElementById("details").open = false));
   await panel.evaluate(() => window.scrollTo(0, 0));
   await setScheme(panel, "dark");

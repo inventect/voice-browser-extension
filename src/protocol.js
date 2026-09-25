@@ -25,6 +25,14 @@ export const MSG = {
   SET_STT: "set-stt", // { apiKey?, engine? } (options page) → STT_STATUS
   STT_TOKEN: "stt-token", // → { ok, token } single-use realtime token (side panel), key stays in the worker
   TEST_STT: "test-stt", // { apiKey? } → { ok, latencyMs } mints (and discards) one token
+  // microphone (local addition): it lives in an offscreen document, so listening continues while
+  // the side panel is closed. The worker owns the on/off state.
+  MIC_STATE: "mic-state", // → { on, starting, engine, lang, since, error }
+  MIC_START: "mic-start",
+  MIC_STOP: "mic-stop", // { reason? }
+  MIC_TOGGLE: "mic-toggle",
+  SET_LANG: "set-lang", // { lang: "ko-KR" | "en-US" } recognition + panel language
+  MIC_EVENT: "mic-event", // offscreen → worker: { kind: "log" | "stopped" | "engine" | "error", ... }
 
   // service worker → side panel (port broadcast)
   HELLO: "hello",
@@ -36,6 +44,14 @@ export const MSG = {
   TABS: "tabs",
   ERROR: "error",
   CONTEXT: "context",
+  MIC: "mic", // mic state changed (local addition)
+  SPEECH: "speech", // { t, line } raw recogniser event for the Details log (local addition)
+
+  // service worker → offscreen document (local addition; messages carry target: "offscreen")
+  OFF_START: "off:start", // { lang, engine, keyterms } → { ok, engine, warning? } | { ok: false, code, error }
+  OFF_STOP: "off:stop", // { reason }
+  OFF_KEYTERMS: "off:keyterms", // { keyterms }
+  OFF_STATUS: "off:status", // → { on, engine, lang, since }
 
   // service worker → content script
   CS_PING: "vb:ping",

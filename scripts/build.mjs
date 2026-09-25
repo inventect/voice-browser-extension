@@ -39,11 +39,12 @@ const jobs = [
   { entryPoints: [path.join(src, "sidepanel.js")], outfile: path.join(dist, "sidepanel.js"), format: "iife" },
   { entryPoints: [path.join(src, "options.js")], outfile: path.join(dist, "options.js"), format: "iife" },
   { entryPoints: [path.join(src, "permission.js")], outfile: path.join(dist, "permission.js"), format: "iife" },
+  { entryPoints: [path.join(src, "offscreen.js")], outfile: path.join(dist, "offscreen.js"), format: "iife" },
 ];
 
 function copyStatic() {
   fs.copyFileSync(path.join(root, "manifest.json"), path.join(dist, "manifest.json"));
-  for (const f of ["sidepanel.html", "options.html", "permission.html", "ui.css", "sidepanel.css", "pages.css", "scribe-worklet.js"]) {
+  for (const f of ["sidepanel.html", "options.html", "permission.html", "offscreen.html", "ui.css", "sidepanel.css", "pages.css", "scribe-worklet.js"]) {
     fs.copyFileSync(path.join(src, f), path.join(dist, f));
   }
   // Icons: rasterised from assets/icon.svg by `npm run icons` (Playwright) into assets/icons/;

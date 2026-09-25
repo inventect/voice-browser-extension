@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "Control your own browser by voice. Jev (TypeSafe System One) decides intent and target in ~300 ms; the extension acts on the active tab.",
   "minimum_chrome_version": "116",
-  "permissions": ["sidePanel", "storage", "tabs", "scripting", "webNavigation"],
+  "permissions": ["sidePanel", "storage", "tabs", "scripting", "webNavigation", "offscreen"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js",
@@ -21,6 +21,12 @@
   },
   "side_panel": {
     "default_path": "sidepanel.html"
+  },
+  "commands": {
+    "toggle-mic": {
+      "suggested_key": { "default": "Alt+Shift+V", "mac": "Alt+Shift+V" },
+      "description": "Start or stop listening (works with the side panel closed)"
+    }
   },
   "options_ui": {
     "page": "options.html",

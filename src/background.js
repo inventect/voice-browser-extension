@@ -30,3 +30,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 chrome.runtime.onConnect.addListener((port) => {
   appReady.then((app) => app.onConnect(port)).catch(() => {});
 });
+
+// Local addition: keyboard shortcut (manifest "commands") toggles the microphone without the side
+// panel — the mic runs in an offscreen document, so it keeps listening while the panel is closed.
+chrome.commands?.onCommand.addListener((command) => {
+  if (command !== "toggle-mic") return;
+  appReady.then((app) => app.micToggle({ fromShortcut: true })).catch(() => {});
+});

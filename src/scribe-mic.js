@@ -65,6 +65,7 @@ export class ScribeMic {
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
       });
+      this.audioAt = Date.now(); // when the capture device started (probes time actions against it)
       if (!this.active) return this._release();
       let ctx = null;
       try {

@@ -1,5 +1,12 @@
 # Voice Browser — control *your own* Chrome by voice
 
+> **This fork adds** (local changes on top of upstream):
+> - **Korean commands**: Korean query/URL spans, pop-up words (닫기·동의·거부), Naver detection, and a 한국어/English recognition switch.
+> - **ElevenLabs Scribe v2 Realtime** speech-to-text (optional): save a key in Settings and it is used automatically; up to 50 on-screen labels go along as recognition hints. Without a key, Chrome's Web Speech API is used as before.
+> - **Listening survives closing the side panel**: the microphone runs in an offscreen document owned by the service worker. The toolbar badge shows **ON** while listening; **Alt+Shift+V** toggles the mic from any tab.
+> - **Minimal, apple.com-style UI**: system SF Pro / Apple SD Gothic Neo, one blue accent, pill controls, SF Symbols-style glyphs, Korean/English copy.
+> - Tests: `test/unit/{korean,korean-popup,scribe,mic}.test.js`; `test/e2e/voice-el.e2e.mjs` speaks through a fake mic to real ElevenLabs + Jev with the side panel closed (needs `TYPESAFE_API_KEY` and `ELEVENLABS_API_KEY`).
+
 A Manifest V3 Chrome extension. Open the side panel, tap the mic, and talk: "go to wikipedia",
 "search for alan turing", "click the first result", "scroll down a bit", "go back", "no, not that
 one", "close this" (when a pop-up is in the way). Speech streams word by word from the side panel
